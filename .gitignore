@@ -110,6 +110,11 @@ ENV/
 env.bak/
 venv.bak/
 
+# Development and installation testing environments
+venv*/
+venv-dev/
+venv-installation/
+
 # Spyder project settings
 .spyderproject
 .spyproject
