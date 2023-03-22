@@ -1,3 +1,49 @@
 [build-system]
-requires = ["setuptools"]
+requires = ["setuptools", "setuptools-scm"]
 build-backend = "setuptools.build_meta"
+
+[project]
+name         = "HCATNetwork"
+version      = "2023.03.22-02"
+description      = "Testing installation of Package"
+long_description = {file = "README.md"}
+readme = {file = "README.md", content-type = "text/markdown"}
+license = {file = "LICENSE"}
+authors = [
+    {name = "Matteo Leccardi", email = "matteo.leccardi@polimi.it"},
+]
+keywords = ["Coronary", "Artery", "Tree", "Network", "Graph", "Map"]
+classifiers = [
+    "Programming Language :: Python :: 3",
+    "License :: OSI Approved :: MIT License",
+    "Operating System :: OS Independent",
+]
+
+# Software requirements
+requires-python = ">=3.8"
+dependencies = [
+    "numpy",
+    "matplotlib"
+]
+
+
+# URLs
+[project.urls]
+homepage = "https://github.com/AAMIASoftwares-research/HCATNetwork"
+documentation = "https://github.com/AAMIASoftwares-research/HCATNetwork"
+repository = "https://github.com/AAMIASoftwares-research/HCATNetwork.git"
+institution = "https://www.polimi.it/"
+institution-lab = "https://www.b3lab.deib.polimi.it/"
+bug-tracker = "https://github.com/AAMIASoftwares-research/HCATNetwork/issues"
+
+
+### old stuff ###
+#[options]
+#packages = find:
+#zip_safe = True
+#include_package_data = True
+#python_requires  = >=3.10
+
+#[options.package_data]
+#* = README.md
+#HCATNetwork = *.json, *.txt
