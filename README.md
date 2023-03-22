@@ -22,3 +22,14 @@ Now, install the package with:
 ```sh
 python -m pip install git+https://github.com/AAMIASoftwares-research/HCATNetwork.git
 ```
+
+## For developers
+
+For testing without always re-installing everything, create a ```venv-dev``` in the
+main folder of this repo.
+
+Distribution procedure ([link](https://godatadriven.com/blog/a-practical-guide-to-setuptools-and-pyproject-toml/)):
+
+1. Install package ```build``` in ```venv-dev```.
+2. Update ```setup.cfg``` file.
+3. Build your package by running ```python -m build --wheel``` from the folder where the ```pyproject.toml``` resides.

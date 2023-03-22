@@ -1,3 +1,3 @@
 import HCATNetwork
 
-HCATNetwork.zz_prova.prova()
+HCATNetwork.prova()
