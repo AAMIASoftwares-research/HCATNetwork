@@ -7,4 +7,4 @@ import warnings
 # My imports
 
 # Tests
-import zz_prova
+from .zz_prova import *

@@ -7,5 +7,6 @@ def prova():
     ax.scatter(a[:,0], a[:,1], a[:,2], c=a[:,2], cmap="rainbow")
     plt.show()
 
+# unit testing
 if __name__ == "__main__":
     prova()
