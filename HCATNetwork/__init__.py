@@ -2,9 +2,8 @@
 import os
 import sys
 import json
-import warnings 
+import warnings
+import collections
 
 # My imports
 
-# Tests
-from .zz_prova import *
