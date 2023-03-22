@@ -6,7 +6,6 @@ build-backend = "setuptools.build_meta"
 name         = "HCATNetwork"
 version      = "2023.03.22-02"
 description      = "Testing installation of Package"
-long_description = {file = "README.md"}
 readme = {file = "README.md", content-type = "text/markdown"}
 license = {file = "LICENSE"}
 authors = [
