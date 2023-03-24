@@ -40,7 +40,8 @@ bug-tracker = "https://github.com/AAMIASoftwares-research/HCATNetwork/issues"
 
 # Define Package(s)
 [tool.setuptools.packages.find]
-include = ["HCATNetwork*"]  
+include = ["HCATNetwork*"]
+exclude = ["HCATNetwork.test*"]
 
 
 
