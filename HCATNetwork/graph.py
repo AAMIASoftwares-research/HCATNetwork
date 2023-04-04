@@ -1,19 +1,27 @@
 import numpy
 import networkx
+import node, edge
 
-### Simple 3D + R graph ###
-from node import NodeVertex3Radius
-class CenterlineWithRadiusGraph(object):
-    name: str
-    tree: str
-    g: networkx.classes.digraph.DiGraph
+def saveGraph(
+        graph: networkx.classes.graph.Graph|
+                     networkx.classes.digraph.DiGraph|
+                     networkx.classes.multigraph.MultiGraph|
+                     networkx.classes.multidigraph.MultiDiGraph,
+        file_path: str):
+    networkx.write_gml(graph, file_path)
 
-    def __init__(self):
-        self.g = networkx.DiGraph()
+def loadGraph(file_path: str) ->    networkx.classes.graph.Graph|\
+                                    networkx.classes.digraph.DiGraph|\
+                                    networkx.classes.multigraph.MultiGraph|\
+                                    networkx.classes.multidigraph.MultiDiGraph:
+    return networkx.read_gml(file_path)
 
-
+    
 
 
 if __name__ == "__main__":
     print("Running 'HCATNetwork.graph' module")
+
+
+
     

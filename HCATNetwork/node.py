@@ -31,7 +31,7 @@ def assertNodeValidity(dictionary: dict):
             return False
     return True
 
-def getDictFromKeyList(key_list: dict):
+def getNodeDictFromKeyList(key_list: dict):
     """Just a wrapper function with a more memorable name"""
     return dict.fromkeys(key_list)
 
@@ -43,7 +43,7 @@ def getDictFromKeyList(key_list: dict):
 """
 A vertex node is a node defined by just its label and x, y, z positions
 """
-VertexNode_KeysList = ["label", "x", "y", "z"]
+VertexNode_KeysList = ["class", "x", "y", "z"]
 
 def getListVertexFromVertexNode(d: dict):
     return [d["x"], d["y"], d["z"]]
@@ -53,7 +53,7 @@ def getNumpyVertexFromVertexNode(d: dict):
 
 def setVertexNodeVertex(d: dict, v: list | numpy.ndarray):
     if len(v) == 0 or len(v) > 3:
-        raise RuntimeError(f"fUnsupported vertex length: {len(v)}")
+        raise RuntimeError(f"Unsupported vertex length: {len(v)}")
     if isinstance(v, numpy.ndarray):
         v = v.flatten()
     for key, new_val in itertools.zip_longest(["x", "y", "z"], v, fillvalue=0.0):
@@ -76,7 +76,7 @@ with no added complexity.
 where "r" (0) stands for right, "l" (1) for left, "b" (2) for both
 (there are some heart structures in which the coronary arteries from left and right side branches merge together)
 """
-SimpleCenterlineNode_KeysList = ["label", "x", "y", "z", "t", "r", "tree"]
+SimpleCenterlineNode_KeysList = ["class", "x", "y", "z", "t", "r", "tree"]
 
 def getListVertexFromSimpleCenterlineNode(d: dict):
     return [d["x"], d["y"], d["z"]]
@@ -117,8 +117,9 @@ This is the only node actively maintained and that will be used in the future.
 """
 
 if __name__ == "__main__":
+    print("Running 'HCATNetwork.node' module")
     a = numpy.ones((1,))
-    d = getDictFromKeyList(VertexNode_KeysList)
+    d = getNodeDictFromKeyList(VertexNode_KeysList)
     print(a, d)
 
     setVertexNodeVertex(d, a)
