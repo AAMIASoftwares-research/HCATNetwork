@@ -18,6 +18,11 @@ The steps then are:
     1. Create an uninitialised dict starting from one of the provided templates
     2. Populate ALL fields of the dict
     3. check for dictionary integrity with assertNodeValidity()
+
+IMPORTANT:
+Node ids MUST be strings. They can be floats or any hashable python object, but in reading/writing for
+saving the file, all gets lost. To ensure continuity between a graph created on the fly and another one
+opened from a file, use strings (even better if str(i), where i is an integer).
 """
 import itertools
 import numpy
@@ -72,11 +77,20 @@ def setVertexNodeVertex(d: dict, v: list | numpy.ndarray):
 """
 This node stores just the most basic information about the geometric centerline,
 with no added complexity.
-"tree" must be one of the string literals defined in the following list: ["r", "l", "b"] or numeric [0, 1, 2]
-where "r" (0) stands for right, "l" (1) for left, "b" (2) for both
-(there are some heart structures in which the coronary arteries from left and right side branches merge together)
+- "class": A literal from the list ["o", "s", "i", "e"]:
+    o: coronary ostium/starting point of the left or right tree
+    s: segment (a point with 2 connections)
+    i: intersection (a point with more than two connections)
+    e: endpoint
+- x, y, z, t, r: The cartesian and temporal coordinates of the node, as well with
+    r, which is the radius of the circle with area equivalent to the area of the coronary lumen at that point.
+- "tree" must be one of the string literals defined in the following list: ["r", "l", "b"] or numeric [0, 1, 2]
+    where "r" (0) stands for right, "l" (1) for left, "b" (2) for both
+    (there are some heart structures in which the coronary arteries from left and right side branches merge together)
 """
-SimpleCenterlineNode_KeysList = ["class", "x", "y", "z", "t", "r", "tree"]
+SimpleCenterlineNode_KeysList        = ["class", "x", "y", "z", "t", "r", "tree"]
+SimpleCenterlineNode_class_ValueList = ["o", "s", "i", "e"]
+SimpleCenterlineNode_tree_ValueList  = ["r", "l", "b"]
 
 def getListVertexFromSimpleCenterlineNode(d: dict):
     return [d["x"], d["y"], d["z"]]
@@ -115,6 +129,8 @@ def setSimpleCenterlineNodeVertexRadius(d: dict, v: list | numpy.ndarray):
 This is the "most complete" node, with everything that is needed and that might be needed in the future.
 This is the only node actively maintained and that will be used in the future.
 """
+
+HeartCoronaryArteryNode_KeysList = ["this is the most complete dict you can think of"]
 
 if __name__ == "__main__":
     print("Running 'HCATNetwork.node' module")

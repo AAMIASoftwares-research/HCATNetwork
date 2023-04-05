@@ -46,7 +46,7 @@ In this basic edge, the idea is to have positive distances for edges connecting 
 to a more distal point with respect to the coronary ostium, while having the same distance, but negative, in the connection
 between a distal point to the proximal point. Thus, it is possible to encounter negative distances.
 """
-BasicEdge_KeysList = ["weight", "distance"]
+BasicEdge_KeysList = ["weight", "signed_distance"]
 
 
 if __name__ == "__main__":
