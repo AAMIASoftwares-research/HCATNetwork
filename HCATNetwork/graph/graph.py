@@ -150,7 +150,7 @@ def loadGraph(file_path: str) ->    networkx.classes.graph.Graph|\
 """
 CenterlineGraph_KeysList: list[str] = [
     "image_id",
-    "are_left_right_disjointed"
+    "are_left_right_disjointed",
 ]
 
 
