@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name         = "HCATNetwork"
-version      = "2023.04.06-00"
+version      = "2023.04.06-01"
 description      = "A package which defines standardised dictionaries and functionalities to create and work with Heart coronary Artery Tree Graphs"
 readme = {file = "README.md", content-type = "text/markdown"}
 license = {file = "LICENSE"}

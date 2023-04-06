@@ -4,11 +4,12 @@ Heart Coronary Arterial Tree Network data structure based on NetworkX
 
 ## Requirements
 
-Developed and tested on Python 3.11 or later
+Developed and tested on Python 3.11 or later. Absolutely requires python >= 3.9.
+It is possible to install multiple python versions on the same machine without having them clashing, check out the official website for more infos.
 
 ## Installation
 
-We recommend you create a virtual environment in python in which to install this package.
+To use this package inside your own personal project, we recommend you create a virtual environment in python in which to install this package.
 
 ```sh
 cd ~/project/folder/
@@ -23,9 +24,21 @@ Now, install the package with:
 python -m pip install git+https://github.com/AAMIASoftwares-research/HCATNetwork.git
 ```
 
+Now, you should be able to
+
+```py
+import HCATNetwork
+print(HCATNetwork.edge.BasicEdge_KeysList)
+```
+
+just as you would with numpy and other packages.
+
+
 ## For developers
 
 For testing without always re-installing everything, create a ```venv-dev``` in the
 main folder of this repo.
 
 Each time changes are made, update the "version" field in the ```pyproject``` file.
+
+For developing, the requirements are listed in ```requirements-dev.txt```.
