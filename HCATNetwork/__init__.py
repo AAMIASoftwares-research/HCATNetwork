@@ -15,6 +15,7 @@ Note that, for these eobjects, the holded data type, if numerical, will be autom
 Conversion makes use of the "json" package. See "graph" module for more.
 """
 
+welcome = "Welcome to HCATNetwork - Heart Coronary Artery Tree Network"
 
 # When the module gets imported
 from . import node, edge, graph

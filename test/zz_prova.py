@@ -1,3 +1,4 @@
+# not tried since 2023.04.05, prob wont work, useless anyway
 import numpy
 import networkx as nx
 import matplotlib.pyplot as plt
