@@ -15,6 +15,13 @@ The steps then are:
     1. Create an uninitialised dict starting from one of the provided templates.
     2. Populate ALL fields of the dict, by also using the utilities provided here.
     3. check for dictionary integrity with assertNodeValidity().
+
+An edge in NetworkX should have the "weight" parameter, which is used in many algorithms
+as the standard parameter of the edge.
+Here, the weight can assume any meaning. Whichever meaning you assign to it, there should also exist
+a dictionary key for the specific meaning.
+For example, if the weight is intended as a node distance in 3D space, then the dict should contain
+both "weight" and "distance" or "distance_euclidean" or whatever.
 """
 ####################
 # Common utilities
@@ -35,14 +42,7 @@ def getEdgeDictFromKeyList(key_list: list[str]) -> dict:
 # Basic Edge
 ##############
 """
-An edge in NetworkX should have the "weight" parameter, which is used in many algorithms
-as the standard parameter of the edge.
-Here, the weight can assuma any meaning. Whichever meaning you assign to it, there should also exist
-a dictionary key for the specific meaning.
-    For example, if the weight is intended as a node distance in 3D space, then the dict should contain
-    both "weight" and "distance" or "distance_euclidean" or wathever.
-
-In this basic edge, the idea is to have positive distances for edges connecting a proximal point on the cnetelrine
+In this basic edge, the idea is to have positive distances for edges connecting a proximal point on the centerline
 to a more distal point with respect to the coronary ostium, while having the same distance, but negative, in the connection
 between a distal point to the proximal point. Thus, it is possible to encounter negative distances.
 """
