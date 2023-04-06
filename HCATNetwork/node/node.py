@@ -30,13 +30,13 @@ import numpy
 ####################
 # Common utilities
 ####################
-def assertNodeValidity(dictionary: dict):
+def assertNodeValidity(dictionary: dict) -> bool:
     for v in dictionary.values():
         if v is None:
             return False
     return True
 
-def getNodeDictFromKeyList(key_list: dict):
+def getNodeDictFromKeyList(key_list: list[str]) -> dict:
     """Just a wrapper function with a more memorable name"""
     return dict.fromkeys(key_list)
 
@@ -48,7 +48,7 @@ def getNodeDictFromKeyList(key_list: dict):
 """
 A vertex node is a node defined by just its label and x, y, z positions
 """
-VertexNode_KeysList = ["class", "x", "y", "z"]
+VertexNode_KeysList: list[str] = ["class", "x", "y", "z"]
 
 def getListVertexFromVertexNode(d: dict):
     return [d["x"], d["y"], d["z"]]
@@ -88,9 +88,9 @@ with no added complexity.
     where "r" (0) stands for right, "l" (1) for left, "b" (2) for both
     (there are some heart structures in which the coronary arteries from left and right side branches merge together)
 """
-SimpleCenterlineNode_KeysList        = ["class", "x", "y", "z", "t", "r", "tree"]
-SimpleCenterlineNode_class_ValueList = ["o", "s", "i", "e"]
-SimpleCenterlineNode_tree_ValueList  = ["r", "l", "b"]
+SimpleCenterlineNode_KeysList: list[str]        = ["class", "x", "y", "z", "t", "r", "tree"]
+SimpleCenterlineNode_class_ValueList: list[str] = ["o", "s", "i", "e"]
+SimpleCenterlineNode_tree_ValueList: list[str]  = ["r", "l", "b"]
 
 def getListVertexFromSimpleCenterlineNode(d: dict):
     return [d["x"], d["y"], d["z"]]
@@ -130,7 +130,7 @@ This is the "most complete" node, with everything that is needed and that might 
 This is the only node actively maintained and that will be used in the future.
 """
 
-HeartCoronaryArteryNode_KeysList = ["this is the most complete dict you can think of"]
+HeartCoronaryArteryNode_KeysList: list[str] = ["this is the most complete dict you can think of"]
 
 if __name__ == "__main__":
     print("Running 'HCATNetwork.node' module")

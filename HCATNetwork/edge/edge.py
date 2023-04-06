@@ -19,13 +19,13 @@ The steps then are:
 ####################
 # Common utilities
 ####################
-def assertEdgeValidity(dictionary: dict):
+def assertEdgeValidity(dictionary: dict) -> bool:
     for v in dictionary.values():
         if v is None:
             return False
     return True
 
-def getEdgeDictFromKeyList(key_list: dict):
+def getEdgeDictFromKeyList(key_list: list[str]) -> dict:
     """Just a wrapper function with a more memorable name"""
     return dict.fromkeys(key_list)
 
@@ -46,7 +46,7 @@ In this basic edge, the idea is to have positive distances for edges connecting 
 to a more distal point with respect to the coronary ostium, while having the same distance, but negative, in the connection
 between a distal point to the proximal point. Thus, it is possible to encounter negative distances.
 """
-BasicEdge_KeysList = ["weight", "signed_distance"]
+BasicEdge_KeysList: list[str] = ["weight", "signed_distance"]
 
 
 if __name__ == "__main__":

@@ -16,13 +16,13 @@ import networkx
 ####################
 # Common utilities
 ####################
-def assertGraphValidity(dictionary: dict):
+def assertGraphValidity(dictionary: dict) -> bool:
     for v in dictionary.values():
         if v is None:
             return False
     return True
 
-def getGraphDictFromKeyList(key_list: dict):
+def getGraphDictFromKeyList(key_list: list[str]):
     """Just a wrapper function with a more memorable name"""
     return dict.fromkeys(key_list)
 
@@ -148,7 +148,7 @@ def loadGraph(file_path: str) ->    networkx.classes.graph.Graph|\
 ##################
 """The basic centerline graph
 """
-CenterlineGraph_KeysList = [
+CenterlineGraph_KeysList: list[str] = [
     "image_id",
     "are_left_right_disjointed"
 ]
