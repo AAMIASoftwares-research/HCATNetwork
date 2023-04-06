@@ -12,8 +12,6 @@ on insecure python libraries as other do. NetworkX is used as a load/save interf
 import os, sys, copy, json
 import numpy
 import networkx
-import node, edge
-
 
 ####################
 # Common utilities
