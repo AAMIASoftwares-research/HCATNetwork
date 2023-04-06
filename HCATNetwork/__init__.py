@@ -13,6 +13,10 @@ As of now, supported node, edge and graph features include, beside the standard 
 - numpy's n-dimensional arrays
 Note that, for these eobjects, the holded data type, if numerical, will be automatically converted to "float".
 Conversion makes use of the "json" package. See "graph" module for more.
+
+Future improvements:
+Use TypedDict: https://peps.python.org/pep-0589/ , from typing import TypedDict
+    In this was, data retrieval from files will be much more precise.
 """
 
 welcome = "Welcome to HCATNetwork - Heart Coronary Artery Tree Network"
