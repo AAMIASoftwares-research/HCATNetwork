@@ -17,5 +17,5 @@ Conversion makes use of the "json" package. See "graph" module for more.
 
 
 # When the module gets imported
-from . import node, edge, graph
+#from . import node, edge, graph
 __all__ = ["graph", "edge", "node"]
