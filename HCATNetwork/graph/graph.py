@@ -1,8 +1,14 @@
 """Graph
-Following the same principles developed for node and edge, also graph.py
-defines a set of standard functionality and graph features under the
-mechanism of standardised keys lists.
-A graph can hold, other than nodes and edges, also all sorts of information.
+This file defines standard data structures for graph attributes/features.
+In this context, "graph attribute" is any object associated (contained) in a graph, while graph features implies
+that each graph attribute is a single float, a sort of "unwinding" of node attributes.
+A graph feature must be such that it can be then encoded, along all other features, in a feature matrix.
+Here we define many standard dictionaries used in the context of Heart Coronary Artery Tree mapping.
+Depending on the kind of graph, a graph can have some attributes. Each attribute is defined as a dictionary entry.
+The defined dictionaries are meant to be used together with NetworkX, which means that NetworkX must accept the
+here-defined dictionaries as node features.
+
+A graph can hold, other than nodes and edges, also all sorts of information, which are stored in graph attributes.
 Here, the information is encoded in standard containers, depending on the type of graph.
 
 Loading and Saving:
@@ -10,22 +16,15 @@ The GML file tipe is chosen to hold graph data, as it is widely supported and do
 on insecure python libraries as other do. NetworkX is used as a load/save interface.
 """
 import os, sys, copy, json
+from enum import Enum, auto
 import numpy
 import networkx
 
-####################
-# Common utilities
-####################
-def assertGraphValidity(dictionary: dict) -> bool:
-    for v in dictionary.values():
-        if v is None:
-            return False
-    return True
+from ..core.core import CoreDict
 
-def getGraphDictFromKeyList(key_list: list[str]):
-    """Just a wrapper function with a more memorable name"""
-    return dict.fromkeys(key_list)
-
+###################################
+# LOADING and SAVING to text files
+##################################
 
 def saveGraph(
         graph: networkx.classes.graph.Graph|
@@ -75,7 +74,7 @@ def saveGraph(
                     edge_features_conversion_v.append("list")
                 e[k] = json.dumps(e[k])
     edge_features_conversion_dict = {k: v for k, v in zip(edge_features_conversion_k, edge_features_conversion_v)}
-    # Convert any graph data into a json stringgraph
+    # Convert any graph data into a json string
     for k in graph.graph:
         if isinstance(graph.graph[k], numpy.ndarray):
             if not k in graph_features_conversion_k:
@@ -143,15 +142,15 @@ def loadGraph(file_path: str) ->    networkx.classes.graph.Graph|\
     return graph
 
 
-##################
-# Centerline Graph
-##################
+########################
+# Basic Centerline Graph
+########################
 """The basic centerline graph
 """
-CenterlineGraph_KeysList: list[str] = [
-    "image_id",
-    "are_left_right_disjointed",
-]
+
+class BasicCenterlineGraph(CoreDict):
+     image_id: str
+     are_left_right_disjointed: bool
 
 
 ############################
@@ -165,13 +164,16 @@ For the future.
 """
 
 # Heart dominance is described by which coronary artery branch gives off the posterior descending artery and supplies the inferior wall, and is characterized as left, right, or codominant
-
+class HeartDominance(Enum):
+    LEFT = auto()
+    RIGHT= auto()
+    CODOMINANT = auto()
 
 if __name__ == "__main__":
     print("Running 'HCATNetwork.graph' module")
 
     # example: save a graph with nodes holding a random ndarray, and see what happens
-    attr_dict = getGraphDictFromKeyList(CenterlineGraph_KeysList)
+    attr_dict = BasicCenterlineGraph
     attr_dict["image_id"] = "nessuna immagine"
     attr_dict["are_left_right_disjointed"] = 1
     g = networkx.Graph(**attr_dict)

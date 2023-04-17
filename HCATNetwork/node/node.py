@@ -1,45 +1,26 @@
-"""
-This file has the same aim of a header file in C/C++: to define standard data structures for node attributes.
-The aim is to create a data-only struct, but in form of a dictionary.
-Here we define many standard dictionaries used in the context of Heart Coronary Artery Tree mapping.
-Depending on the kind of node, a node can have some features. Each feature is defined as a dictionary entry.
+"""Node
+This file defines standard data structures for node attributes/features.
+In this context, "node attribute" is any object associated (contained) in a node, while node features implies
+that each node attribute is a single float, a sort of "unwinding" of node attributes.
 A node feature must be such that it can be then encoded, along all other features, in a feature matrix.
-
-Following are defined, each with its use cases and explanation, some lists of keys which define
-the dictionary entries.
-To create a dictionary with the predefined kays and values, use:
-    dict.fromkeys(some_KeysList)
-        or
-    node_dict = getDictFromKeyList(some_KeysList)
-which will initialise each dictionary field to None. Of course, you should populate all of it, otherwise errors might occur.
-For each node/dictionary type, a series of functions are predefined to be applicable to that specific kind of dict.
-
-The steps then are:
-    1. Create an uninitialised dict starting from one of the provided templates
-    2. Populate ALL fields of the dict
-    3. check for dictionary integrity with assertNodeValidity()
+Here we define many standard dictionaries used in the context of Heart Coronary Artery Tree mapping.
+Depending on the kind of node, a node can have some attributes. Each attribute is defined as a dictionary entry.
+The defined dictionaries are meant to be used together with NetworkX, which means that NetworkX must accept the
+here-defined dictionaries as node features.
 
 IMPORTANT:
-Node ids MUST be strings. They can be floats or any hashable python object, but in reading/writing for
+Node ids MUST be strings when creating nodes for NetworkX. They can be floats or any hashable python object, but in reading/writing for
 saving the file, all gets lost. To ensure continuity between a graph created on the fly and another one
 opened from a file, use strings (even better if str(i), where i is an integer).
 """
 import itertools
+from enum import Enum, auto
 import numpy
+from ..core.core import CoreDict
 
 ####################
 # Common utilities
 ####################
-def assertNodeValidity(dictionary: dict) -> bool:
-    for v in dictionary.values():
-        if v is None:
-            return False
-    return True
-
-def getNodeDictFromKeyList(key_list: list[str]) -> dict:
-    """Just a wrapper function with a more memorable name"""
-    return dict.fromkeys(key_list)
-
 
 
 ##############
@@ -48,21 +29,26 @@ def getNodeDictFromKeyList(key_list: list[str]) -> dict:
 """
 A vertex node is a node defined by just its label and x, y, z positions
 """
-VertexNode_KeysList: list[str] = ["class", "x", "y", "z"]
+class VertexNode(CoreDict):
+    x: float
+    y: float 
+    z: float 
 
-def getListVertexFromVertexNode(d: dict):
-    return [d["x"], d["y"], d["z"]]
+    def getVertexList(self) -> list[float]:
+        return [self.__getitem__("x"), self.__getitem__("y"), self.__getitem__("z")]
 
-def getNumpyVertexFromVertexNode(d: dict):
-    return numpy.array(getListVertexFromVertexNode(d))
+    def getVertexNumpyArray(self) -> numpy.ndarray:
+        return numpy.array(self.getVertexList())
 
-def setVertexNodeVertex(d: dict, v: list | numpy.ndarray):
-    if len(v) == 0 or len(v) > 3:
-        raise RuntimeError(f"Unsupported vertex length: {len(v)}")
-    if isinstance(v, numpy.ndarray):
-        v = v.flatten()
-    for key, new_val in itertools.zip_longest(["x", "y", "z"], v, fillvalue=0.0):
-        d[key] = float(new_val)
+    def setVertex(self, v: float | list | numpy.ndarray):
+        if isinstance(v, float):
+            v = [v]
+        if len(v) == 0 or len(v) > 3:
+            raise RuntimeError(f"Unsupported input vertex length: {len(v)}")
+        if isinstance(v, numpy.ndarray):
+            v = v.flatten()
+        for key, new_val in itertools.zip_longest(["x", "y", "z"], v, fillvalue=0.0):
+            self.__setitem__(key, float(new_val))
         
 
 
@@ -77,48 +63,48 @@ def setVertexNodeVertex(d: dict, v: list | numpy.ndarray):
 """
 This node stores just the most basic information about the geometric centerline,
 with no added complexity.
-- "class": A literal from the list ["o", "s", "i", "e"]:
+- "topology_class": An enum from the list ["o", "s", "i", "e"]:
     o: coronary ostium/starting point of the left or right tree
     s: segment (a point with 2 connections)
     i: intersection (a point with more than two connections)
     e: endpoint
-- x, y, z, t, r: The cartesian and temporal coordinates of the node, as well with
+- x, y, z, t, r: The cartesian and temporal coordinates of the node, as well as
     r, which is the radius of the circle with area equivalent to the area of the coronary lumen at that point.
-- "tree" must be one of the string literals defined in the following list: ["r", "l", "b"] or numeric [0, 1, 2]
-    where "r" (0) stands for right, "l" (1) for left, "b" (2) for both
+- "tree" must be one of the string literals defined in the following enum: ["r", "l", "b"], where "b" stands for "both"
     (there are some heart structures in which the coronary arteries from left and right side branches merge together)
 """
-SimpleCenterlineNode_KeysList: list[str]        = ["class", "x", "y", "z", "t", "r", "tree"]
-SimpleCenterlineNode_class_ValueList: list[str] = ["o", "s", "i", "e"]
-SimpleCenterlineNode_tree_ValueList: list[str]  = ["r", "l", "b"]
+class ArteryPointTopologyClass(Enum):
+    OSTIUM = auto()
+    SEGMENT = auto()
+    INTERSECTION = auto()
+    ENDPOINT = auto()
 
-def getListVertexFromSimpleCenterlineNode(d: dict):
-    return [d["x"], d["y"], d["z"]]
+class ArteryPointTree(Enum):
+    RIGHT = auto()
+    LEFT = auto()
+    RL = auto()
 
-def getNumpyVertexFromSimpleCenterlineNode(d: dict):
-    return numpy.array(getListVertexFromSimpleCenterlineNode(d))
+class SimpleCenterlineNode(VertexNode):
+    topology_class: ArteryPointTopologyClass
+    t: float
+    r: float
+    arterial_tree: ArteryPointTree
 
-def setSimpleCenterlineNodeVertex(d: dict, v: list | numpy.ndarray):
-    if len(v) == 0 or len(v) > 3:
-        raise RuntimeError(f"Unsupported vertex length: {len(v)}")
-    if isinstance(v, numpy.ndarray):
-        v = v.flatten()
-    for key, new_val in itertools.zip_longest(["x", "y", "z"], v, fillvalue=0.0):
-        d[key] = float(new_val)
+    def getVertexRadiusList(self):
+        return self.getVertexList().extend(self.__getitem__("r"))
 
-def getListVertexRadiusFromSimpleCenterlineNode(d: dict):
-    return [d["x"], d["y"], d["z"], d["r"]]
+    def getVertexRadiusNumpyArray(self):
+        return numpy.array(self.getVertexRadiusList())
 
-def getNumpyVertexRadiusFromSimpleCenterlineNode(d: dict):
-    return numpy.array(getListVertexRadiusFromSimpleCenterlineNode(d))
-
-def setSimpleCenterlineNodeVertexRadius(d: dict, v: list | numpy.ndarray):
-    if len(v) != 4:
-        raise RuntimeError(f"Input object should be exactly of length 4, instead it is: {len(v)}")
-    if isinstance(v, numpy.ndarray):
-        v = v.flatten()
-    for key, new_val in itertools.zip_longest(["x", "y", "z", "r"], v, fillvalue=0.0):
-        d[key] = float(new_val)
+    def setVertexRadius(self, v: float | list | numpy.ndarray):
+        if isinstance(v, float):
+            v = [v]
+        if len(v) == 0 or len(v) > 4:
+            raise RuntimeError(f"Unsupported input vertex length: {len(v)}")
+        if isinstance(v, numpy.ndarray):
+            v = v.flatten()
+        for key, new_val in itertools.zip_longest(["x", "y", "z", "r"], v, fillvalue=0.0):
+            self.__setitem__(key, float(new_val))
 
 
 
@@ -130,13 +116,13 @@ This is the "most complete" node, with everything that is needed and that might 
 This is the only node actively maintained and that will be used in the future.
 """
 
-HeartCoronaryArteryNode_KeysList: list[str] = ["this is the most complete dict you can think of"]
+class HeartCoronaryArteryNode(CoreDict): # ["this is the most complete dict you can think of"]
+    everything: any
 
 if __name__ == "__main__":
     print("Running 'HCATNetwork.node' module")
-    a = numpy.ones((1,))
-    d = getNodeDictFromKeyList(VertexNode_KeysList)
-    print(a, d)
-
-    setVertexNodeVertex(d, a)
+    d = SimpleCenterlineNode()
     print(d)
+
+    d["arterial_tree"] = ArteryPointTree.RIGHT
+    print(d, d["arterial_tree"].value)
