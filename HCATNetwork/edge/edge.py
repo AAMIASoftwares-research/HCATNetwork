@@ -53,7 +53,7 @@ class BasicEdge(CoreDict):
 if __name__ == "__main__":
     print("Running 'HCATNetwork.edge' module")
 
-    d = BasicEdge_FeatureDict()
+    d = BasicEdge()
     d["weight"] = 0.9
     print(d.isValid())
     d.setNegativeSignedDistance()

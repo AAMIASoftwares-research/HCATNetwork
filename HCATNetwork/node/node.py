@@ -32,7 +32,8 @@ A vertex node is a node defined by just its label and x, y, z positions
 class VertexNode(CoreDict):
     x: float
     y: float 
-    z: float 
+    z: float
+
 
     def getVertexList(self) -> list[float]:
         return [self.__getitem__("x"), self.__getitem__("y"), self.__getitem__("z")]
