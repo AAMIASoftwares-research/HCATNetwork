@@ -34,7 +34,6 @@ class VertexNode(CoreDict):
     y: float 
     z: float
 
-
     def getVertexList(self) -> list[float]:
         return [self.__getitem__("x"), self.__getitem__("y"), self.__getitem__("z")]
 

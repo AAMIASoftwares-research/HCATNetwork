@@ -26,27 +26,25 @@ from ..core.core import CoreDict
 # Basic Edge
 ##############
 """
-In this basic edge, the idea is to have positive distances for edges connecting
-a proximal point on the centerline to a more distal point with respect to the 
-coronary ostium, while having the same distance, but negative, in the connection
-between a distal point to the proximal point.
-Thus, it is possible to encounter negative distances.
+In this basic edge, only the euclidean distance between its nodes is conserved as a feature.
+The weight standard parameter is set equal to the signed distance.
 """
 class BasicEdge(CoreDict):
     weight: float
-    signed_distance: float
+    euclidean_distance: float
 
-    def setPositiveSignedDistance(self) -> None:
+    def updateWeightFromEuclideanDIstance(self) -> None:
+        if self["euclidean_distance"] is not None:
+            self.__setitem__("weight", abs(self.__getitem__("euclidean_distance")) )
+        else:
+            raise ValueError("euclidean_distance is currently None")
+    
+    def updateEuclideanDIstanceFromWeight(self) -> None:
         if self["weight"] is not None:
-            self.__setitem__("signed_distance", abs(self.__getitem__("weight")) )
+            self.__setitem__("weight", abs(self.__getitem__("weight")) )
         else:
             raise ValueError("weight is currently None")
     
-    def setNegativeSignedDistance(self) -> None:
-        if self["weight"] is not None:
-            self.__setitem__("signed_distance", -abs(self.__getitem__("weight")) )
-        else:
-            raise ValueError("weight is currently None")
 
 
 

@@ -156,7 +156,7 @@ class BasicCenterlineGraph(CoreDict):
 ############################
 # Coronary Artery Tree Graph
 ############################
-"""Coronary Artery Tree Graph (MultiDiGraph)
+"""Coronary Artery Tree Graph
 This is the most complete graph, holding everything needed for coronary artery tree.
 Both trees (l and r) are stored in the same graph.
 In some patients, it could happen that the left and right subgraphs are not disjointed, hence the need to have just one graph.
@@ -193,6 +193,7 @@ if __name__ == "__main__":
     print([(type(n[1]["numpy_array"]), n[1]["numpy_array"]) for n in g2.nodes.items()][0])
     print([(type(n[1]["numpy_array"][0][0][0]),n[1]["numpy_array"][0][0][0]) for n in g2.nodes.items()][0])
 
+    g.node
 
 
     
