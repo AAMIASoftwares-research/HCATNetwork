@@ -33,13 +33,13 @@ class BasicEdge(CoreDict):
     weight: float
     euclidean_distance: float
 
-    def updateWeightFromEuclideanDIstance(self) -> None:
+    def updateWeightFromEuclideanDistance(self) -> None:
         if self["euclidean_distance"] is not None:
             self.__setitem__("weight", abs(self.__getitem__("euclidean_distance")) )
         else:
             raise ValueError("euclidean_distance is currently None")
     
-    def updateEuclideanDIstanceFromWeight(self) -> None:
+    def updateEuclideanDistanceFromWeight(self) -> None:
         if self["weight"] is not None:
             self.__setitem__("weight", abs(self.__getitem__("weight")) )
         else:
