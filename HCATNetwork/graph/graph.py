@@ -74,7 +74,6 @@ def saveGraph(
                     node_features_conversion_k.append(k)
                     node_features_conversion_v.append("HCATNetwork.node.ArteryPointTree")
                 n[k] = str(n[k].name)
-            print(n[k], k, type[n[k]]) ########################################################################################################
     node_features_conversion_dict = {k: v for k, v in zip(node_features_conversion_k, node_features_conversion_v)}
     # Convert any edge data into a json string
     for e in graph.edges.values():
