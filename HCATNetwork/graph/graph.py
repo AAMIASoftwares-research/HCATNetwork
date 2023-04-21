@@ -16,11 +16,13 @@ The GML file tipe is chosen to hold graph data, as it is widely supported and do
 on insecure python libraries as other do. NetworkX is used as a load/save interface.
 """
 import os, sys, copy, json
+from datetime import datetime, timezone
 from enum import Enum, auto
 import numpy
 import networkx
 
 from ..core.core import CoreDict
+from ..node.node import ArteryPointTopologyClass, ArteryPointTree
 
 ###################################
 # LOADING and SAVING to text files
@@ -36,12 +38,15 @@ def saveGraph(
     Saves the graph in GML format using the networkx interface.
     If some data are:
     - numpy arrays
-    - lists or multidimensional lists
+    - lists or multidimensional lists of basic python types
     data are converted into json strings with json.dumps() before 
     saving the graph in GML format.
     """
     # Make a deep copy of the graph, otherwise the graph will be modified even outside this function
     graph = copy.deepcopy(graph)
+    # Date-time info to save inside file
+    dt_dict = {"timezone": "UTC", "datetime": str(datetime.now(timezone.utc))}
+    graph.graph["creation_datetime"] = dt_dict
     # Setup conversion directives lists
     node_features_conversion_k,  node_features_conversion_v   = [], []
     edge_features_conversion_k,  edge_features_conversion_v   = [], []
@@ -59,6 +64,16 @@ def saveGraph(
                     node_features_conversion_k.append(k)
                     node_features_conversion_v.append("list")
                 n[k] = json.dumps(n[k])
+            if isinstance(n[k], ArteryPointTopologyClass):
+                if not k in node_features_conversion_k:
+                    node_features_conversion_k.append(k)
+                    node_features_conversion_v.append("HCATNetwork.node.ArteryPointTopologyClass")
+                n[k] = str(n[k].name)
+            if isinstance(n[k], ArteryPointTree):
+                if not k in node_features_conversion_k:
+                    node_features_conversion_k.append(k)
+                    node_features_conversion_v.append("HCATNetwork.node.ArteryPointTree")
+                n[k] = str(n[k].name)
     node_features_conversion_dict = {k: v for k, v in zip(node_features_conversion_k, node_features_conversion_v)}
     # Convert any edge data into a json string
     for e in graph.edges.values():
@@ -86,6 +101,12 @@ def saveGraph(
                 graph_features_conversion_k.append(k)
                 graph_features_conversion_v.append("list")
             graph.graph[k] = json.dumps(graph.graph[k])
+        if isinstance(n[k], HeartDominance):
+            if not k in node_features_conversion_k:
+                node_features_conversion_k.append(k)
+                node_features_conversion_v.append("HCATNetwork.node.HeartDominance")
+            n[k] = str(n[k].name)
+
     graph_features_conversion_dict = {k: v for k, v in zip(graph_features_conversion_k, graph_features_conversion_v)}    
     # Save data conversion info
     graph.graph["node_features_conversion_dict"] = node_features_conversion_dict
@@ -95,6 +116,16 @@ def saveGraph(
     networkx.write_gml(graph, file_path)
     # Cleanup deepcopied graph that was useful just for saving it
     del graph
+
+def loadEnums(node, key, clss) -> Enum:
+    out = None
+    for d_ in clss:
+        if d_.name == node[key]:
+            out = d_
+            break
+    if out is None:
+        raise ValueError(f"Error in loading graph nodes data: {type(clss)} does not have {node[key]} member.")
+    return out
 
 def loadGraph(file_path: str) ->    networkx.classes.graph.Graph|\
                                     networkx.classes.digraph.DiGraph|\
@@ -106,6 +137,7 @@ def loadGraph(file_path: str) ->    networkx.classes.graph.Graph|\
     No sign of the conversion is left behind on the loaded graph.
     """
     graph = networkx.read_gml(file_path)
+    del graph.graph["creation_datetime"]
     # Node data
     if "node_features_conversion_dict" in graph.graph:
         if graph.graph["node_features_conversion_dict"]:
@@ -116,7 +148,11 @@ def loadGraph(file_path: str) ->    networkx.classes.graph.Graph|\
                             n[k] = numpy.array(json.loads(n[k]))
                         elif graph.graph["node_features_conversion_dict"][k] == "list":
                             n[k] = json.loads(n[k])
-        del graph.graph["node_features_conversion_dict"] 
+                        elif graph.graph["node_features_conversion_dict"][k] == "HCATNetwork.node.ArteryPointTopologyClass":
+                            n[k] = loadEnums(n, k, ArteryPointTopologyClass)
+                        elif graph.graph["node_features_conversion_dict"][k] == "HCATNetwork.node.ArteryPointTree":
+                            n[k] = loadEnums(n, k, ArteryPointTree)
+        del graph.graph["node_features_conversion_dict"]
     # Edge data
     if "edge_features_conversion_dict" in graph.graph:
         if graph.graph["edge_features_conversion_dict"]:
@@ -136,7 +172,9 @@ def loadGraph(file_path: str) ->    networkx.classes.graph.Graph|\
                     if graph.graph["graph_features_conversion_dict"][k] == "numpy.ndarray":
                         graph.graph[k] = numpy.array(json.loads(graph.graph[k]))
                     elif graph.graph["graph_features_conversion_dict"][k] == "list":
-                        graph.graph[k] = json.loads(graph.graph[k])    
+                        graph.graph[k] = json.loads(graph.graph[k])
+                    elif graph.graph["node_features_conversion_dict"][k] == "HCATNetwork.node.HeartDominance":
+                        n[k] = loadEnums(n, k, HeartDominance)
         del graph.graph["graph_features_conversion_dict"]
     # Done
     return graph
@@ -193,7 +231,6 @@ if __name__ == "__main__":
     print([(type(n[1]["numpy_array"]), n[1]["numpy_array"]) for n in g2.nodes.items()][0])
     print([(type(n[1]["numpy_array"][0][0][0]),n[1]["numpy_array"][0][0][0]) for n in g2.nodes.items()][0])
 
-    g.node
 
 
     

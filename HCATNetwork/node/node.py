@@ -40,7 +40,7 @@ class VertexNode(CoreDict):
     def getVertexNumpyArray(self) -> numpy.ndarray:
         return numpy.array(self.getVertexList())
 
-    def setVertex(self, v: float | list | numpy.ndarray):
+    def setVertex(self, v: float | list | numpy.ndarray) -> None:
         if isinstance(v, float):
             v = [v]
         if len(v) == 0 or len(v) > 3:
