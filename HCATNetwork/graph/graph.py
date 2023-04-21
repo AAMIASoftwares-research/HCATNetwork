@@ -101,12 +101,11 @@ def saveGraph(
                 graph_features_conversion_k.append(k)
                 graph_features_conversion_v.append("list")
             graph.graph[k] = json.dumps(graph.graph[k])
-        if isinstance(n[k], HeartDominance):
+        if isinstance(graph.graph[k], HeartDominance):
             if not k in node_features_conversion_k:
                 node_features_conversion_k.append(k)
                 node_features_conversion_v.append("HCATNetwork.node.HeartDominance")
-            n[k] = str(n[k].name)
-
+            graph.graph[k] = str(n[k].name)
     graph_features_conversion_dict = {k: v for k, v in zip(graph_features_conversion_k, graph_features_conversion_v)}    
     # Save data conversion info
     graph.graph["node_features_conversion_dict"] = node_features_conversion_dict
@@ -174,7 +173,7 @@ def loadGraph(file_path: str) ->    networkx.classes.graph.Graph|\
                     elif graph.graph["graph_features_conversion_dict"][k] == "list":
                         graph.graph[k] = json.loads(graph.graph[k])
                     elif graph.graph["node_features_conversion_dict"][k] == "HCATNetwork.node.HeartDominance":
-                        n[k] = loadEnums(n, k, HeartDominance)
+                        graph.graph[k] = loadEnums(n, k, HeartDominance)
         del graph.graph["graph_features_conversion_dict"]
     # Done
     return graph
