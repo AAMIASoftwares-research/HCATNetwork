@@ -185,3 +185,4 @@ if __name__ == "__main__":
     from ..graph import loadGraph
     g_ = loadGraph(f_prova)
     draw2DCenterlinesGraph(graph=g_)
+    draw3DCenterlinesGraph(graph=g_)

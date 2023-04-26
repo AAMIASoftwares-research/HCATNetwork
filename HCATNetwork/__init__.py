@@ -22,5 +22,5 @@ Use TypedDict: https://peps.python.org/pep-0589/ , from typing import TypedDict
 welcome = "Welcome to HCATNetwork - Heart Coronary Artery Tree Network"
 
 # When the module gets imported
-from . import node, edge, graph
-__all__ = ["graph", "edge", "node"]
+from . import node, edge, graph, draw
+__all__ = ["graph", "edge", "node", "draw"]
