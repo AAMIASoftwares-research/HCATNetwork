@@ -195,8 +195,8 @@ def loadGraph(file_path: str) ->    networkx.classes.graph.Graph|\
 """
 
 class BasicCenterlineGraph(CoreDict):
-     image_id: str
-     are_left_right_disjointed: bool
+    image_id: str
+    are_left_right_disjointed: bool
 
 
 ############################
