@@ -97,7 +97,7 @@ def saveGraph(
     edge_features_conversion_dict = {k: v for k, v in zip(edge_features_conversion_k, edge_features_conversion_v)}
     # Convert any graph data into a json string
     for k in graph.graph:
-        if n[k] is None:
+        if graph.graph[k] is None:
             # The field was not filled although being initialised (which means required)
             raise ValueError(f"Graph feature {k} is None (was not filled). All features must be filled. Abort saving graph.")
         if isinstance(graph.graph[k], numpy.ndarray):
