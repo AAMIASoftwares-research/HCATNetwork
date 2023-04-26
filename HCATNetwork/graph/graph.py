@@ -54,6 +54,9 @@ def saveGraph(
     # Convert any node data into a json string
     for n in graph.nodes.values():
         for k in n:
+            if n[k] is None:
+                # The field was not filled although being initialised (which means required)
+                raise ValueError(f"Feature {k} in graph node {n} is None (was not filled). All features must be filled. Abort saving graph.")
             if isinstance(n[k], numpy.ndarray):
                 if not k in node_features_conversion_k:
                     node_features_conversion_k.append(k)
@@ -78,6 +81,9 @@ def saveGraph(
     # Convert any edge data into a json string
     for e in graph.edges.values():
         for k in e:
+            if e[k] is None:
+                # The field was not filled although being initialised (which means required)
+                raise ValueError(f"Feature {k} in graph edge {e} is None (was not filled). All features must be filled. Abort saving graph.")
             if isinstance(e[k], numpy.ndarray):
                 if not k in edge_features_conversion_k:
                     edge_features_conversion_k.append(k)
@@ -91,6 +97,9 @@ def saveGraph(
     edge_features_conversion_dict = {k: v for k, v in zip(edge_features_conversion_k, edge_features_conversion_v)}
     # Convert any graph data into a json string
     for k in graph.graph:
+        if n[k] is None:
+            # The field was not filled although being initialised (which means required)
+            raise ValueError(f"Graph feature {k} is None (was not filled). All features must be filled. Abort saving graph.")
         if isinstance(graph.graph[k], numpy.ndarray):
             if not k in graph_features_conversion_k:
                 graph_features_conversion_k.append(k)
@@ -131,9 +140,9 @@ def loadGraph(file_path: str) ->    networkx.classes.graph.Graph|\
                                     networkx.classes.multigraph.MultiGraph|\
                                     networkx.classes.multidigraph.MultiDiGraph:
     """Loads the graph from gml format using the networkx interface.
-    The loading function will attempt to recover the original data type of the
+    The loading function will attempt to recover the original data types of the
     attributes of edges, nodes, and graph.
-    No sign of the conversion is left behind on the loaded graph.
+    No sign of the conversion is left behind on the loaded graph, as well as the conversion dictionaries.
     """
     graph = networkx.read_gml(file_path)
     del graph.graph["creation_datetime"]
