@@ -7,6 +7,15 @@ import numpy
 
 from ..node import SimpleCenterlineNode, ArteryPointTopologyClass, ArteryPointTree
 
+MRK_C_IN_RCA = "firebrick"
+MRK_C_IN_LCA = "navy"
+MRK_C_OUT_OSTIUM = "green"
+MRK_C_OUT_INTERSECT = "gold"
+MRK_C_OUT_ENDPOINT = "red"
+MRK_C_OUT_DEFAULT = "grey"
+
+EDGE_C_DEFAULT = "black"
+
 def draw2DCenterlinesGraph(graph):
     """Assumes this kind on dictionaries:
         nodes: HCATNetwork.node.SimpleCenterlineNode
@@ -14,6 +23,7 @@ def draw2DCenterlinesGraph(graph):
         graph: HCATNetwork.graph.BasicCenterlineGraph
     """
     ax = plt.subplot(111)
+    ax.grid(visible=True, zorder=-1)
     # plot nodes
     c_in = []
     c_out = []
@@ -22,28 +32,28 @@ def draw2DCenterlinesGraph(graph):
     positions = []
     for n in graph.nodes:
         n_ = SimpleCenterlineNode(**(graph.nodes[n]))
-        c_in.append("firebrick" if n_["arterial_tree"].value == ArteryPointTree.RIGHT.value else "navy")
+        c_in.append(MRK_C_IN_RCA if n_["arterial_tree"].value == ArteryPointTree.RIGHT.value else MRK_C_IN_LCA)
         if n_["topology_class"].value == ArteryPointTopologyClass.OSTIUM.value:
-            c_out.append("green")
+            c_out.append(MRK_C_OUT_OSTIUM)
             s_out.append(2.5)
         elif n_["topology_class"].value == ArteryPointTopologyClass.ENDPOINT.value:
-            c_out.append("red")
+            c_out.append(MRK_C_OUT_ENDPOINT)
             s_out.append(2.5)
         elif n_["topology_class"].value == ArteryPointTopologyClass.INTERSECTION.value:
-            c_out.append("gold")
+            c_out.append(MRK_C_OUT_INTERSECT)
             s_out.append(2)
         else:
-            c_out.append("grey")
+            c_out.append(MRK_C_OUT_DEFAULT)
             s_out.append(0.0)
         positions.append(n_.getVertexList())
-    # convert to numpy
+    # - convert to numpy
     c_in  = numpy.array(c_in)
     c_out = numpy.array(c_out)
     s_out = numpy.array(s_out)
     positions = numpy.array(positions)
     # - plot
-    below_idx_ = [i for i in range(len(c_out)) if c_out[i] == "grey"]
-    above_idx_ = [i for i in range(len(c_out)) if c_out[i] != "grey"]
+    below_idx_ = [i for i in range(len(c_out)) if c_out[i] == MRK_C_OUT_DEFAULT]
+    above_idx_ = [i for i in range(len(c_out)) if c_out[i] != MRK_C_OUT_DEFAULT]
     ax.scatter( # - below
         positions[below_idx_,0],
         positions[below_idx_,1],
@@ -68,28 +78,32 @@ def draw2DCenterlinesGraph(graph):
         uu = SimpleCenterlineNode(**(graph.nodes[u_])).getVertexList()
         vv = SimpleCenterlineNode(**(graph.nodes[v_])).getVertexList()
         segs.append(numpy.array([uu[:2],vv[:2]]))
-    line_segments = LineCollection(segs, zorder=1, linewidth=0.4, color="black")
+    line_segments = LineCollection(segs, zorder=1, linewidth=0.4, color=EDGE_C_DEFAULT)
     ax.add_collection(line_segments)
     # legend
-    custom_lines = [
-        Line2D([0], [0], color="firebrick", lw=4),
-        Line2D([0], [0], color="navy", lw=4),
-        Line2D([0], [0], color="green", lw=4),
-        Line2D([0], [0], color="gold", lw=4),
-        Line2D([0], [0], color="red", lw=4)
+    legend_elements = [
+        Line2D([0], [0], marker='o', markerfacecolor=MRK_C_IN_RCA, color="w",                 markersize=10, lw=0),
+        Line2D([0], [0], marker='o', markerfacecolor=MRK_C_IN_LCA, color="w",                 markersize=10, lw=0),
+        Line2D([0], [0], marker='o', markerfacecolor="w",          color=MRK_C_OUT_OSTIUM,    markersize=10, lw=0),
+        Line2D([0], [0], marker='o', markerfacecolor="w",          color=MRK_C_OUT_INTERSECT, markersize=10, lw=0),
+        Line2D([0], [0], marker='o', markerfacecolor="w",          color=MRK_C_OUT_ENDPOINT,  markersize=10, lw=0)
     ]
     ax.legend(
-        custom_lines,
+        legend_elements,
         ["RCA",
          "LCA",
          "OSTIA",
          "INTERSECTIONS",
          "ENDPOINTS"]
     )
-        # axis
+    # axis
     ax.set_xlabel("mm")
     ax.set_ylabel("mm")
+    ax.set_axisbelow(True)
+    ax.grid(color='gray', linestyle='dashed')
+    ax.set_title(graph.graph["image_id"])
     # out
+    plt.tight_layout()
     plt.show()
 
 def draw3DCenterlinesGraph(graph):
@@ -107,28 +121,28 @@ def draw3DCenterlinesGraph(graph):
     positions = []
     for n in graph.nodes:
         n_ = SimpleCenterlineNode(**(graph.nodes[n]))
-        c_in.append("firebrick" if n_["arterial_tree"].value == ArteryPointTree.RIGHT.value else "navy")
+        c_in.append(MRK_C_IN_RCA if n_["arterial_tree"].value == ArteryPointTree.RIGHT.value else MRK_C_IN_LCA)
         if n_["topology_class"].value == ArteryPointTopologyClass.OSTIUM.value:
-            c_out.append("green")
+            c_out.append(MRK_C_OUT_OSTIUM)
             s_out.append(2.5)
         elif n_["topology_class"].value == ArteryPointTopologyClass.ENDPOINT.value:
-            c_out.append("red")
+            c_out.append(MRK_C_OUT_ENDPOINT)
             s_out.append(2.5)
         elif n_["topology_class"].value == ArteryPointTopologyClass.INTERSECTION.value:
-            c_out.append("gold")
+            c_out.append(MRK_C_OUT_INTERSECT)
             s_out.append(2)
         else:
-            c_out.append("grey")
+            c_out.append(MRK_C_OUT_DEFAULT)
             s_out.append(0.0)
         positions.append(n_.getVertexList())
-    # convert to numpy
+    # - convert to numpy
     c_in  = numpy.array(c_in)
     c_out = numpy.array(c_out)
     s_out = numpy.array(s_out)
     positions = numpy.array(positions)
     # - plot
-    below_idx_ = [i for i in range(len(c_out)) if c_out[i] == "grey"]
-    above_idx_ = [i for i in range(len(c_out)) if c_out[i] != "grey"]
+    below_idx_ = [i for i in range(len(c_out)) if c_out[i] == MRK_C_OUT_DEFAULT]
+    above_idx_ = [i for i in range(len(c_out)) if c_out[i] != MRK_C_OUT_DEFAULT]
     ax.scatter( # - below
         positions[below_idx_,0],
         positions[below_idx_,1],
@@ -155,18 +169,18 @@ def draw3DCenterlinesGraph(graph):
         uu = SimpleCenterlineNode(**(graph.nodes[u_])).getVertexList()
         vv = SimpleCenterlineNode(**(graph.nodes[v_])).getVertexList()
         segs.append(numpy.array([uu[:3],vv[:3]]))
-    line_segments = Line3DCollection(segs, zorder=1, linewidth=0.4, color="black")
+    line_segments = Line3DCollection(segs, zorder=1, linewidth=0.4, color=EDGE_C_DEFAULT)
     ax.add_collection(line_segments)
     # legend
-    custom_lines = [
-        Line2D([0], [0], color="firebrick", lw=4),
-        Line2D([0], [0], color="navy", lw=4),
-        Line2D([0], [0], color="green", lw=4),
-        Line2D([0], [0], color="gold", lw=4),
-        Line2D([0], [0], color="red", lw=4)
+    legend_elements = [
+        Line2D([0], [0], marker='o', markerfacecolor=MRK_C_IN_RCA, color="w",                 markersize=10, lw=0),
+        Line2D([0], [0], marker='o', markerfacecolor=MRK_C_IN_LCA, color="w",                 markersize=10, lw=0),
+        Line2D([0], [0], marker='o', markerfacecolor="w",          color=MRK_C_OUT_OSTIUM,    markersize=10, lw=0),
+        Line2D([0], [0], marker='o', markerfacecolor="w",          color=MRK_C_OUT_INTERSECT, markersize=10, lw=0),
+        Line2D([0], [0], marker='o', markerfacecolor="w",          color=MRK_C_OUT_ENDPOINT,  markersize=10, lw=0)
     ]
     ax.legend(
-        custom_lines,
+        legend_elements,
         ["RCA",
          "LCA",
          "OSTIA",
@@ -177,7 +191,10 @@ def draw3DCenterlinesGraph(graph):
     ax.set_xlabel("mm")
     ax.set_ylabel("mm")
     ax.set_zlabel("mm")
+    ax.grid(color='gray', linestyle='dashed')
+    ax.set_title(graph.graph["image_id"])
     # out
+    plt.tight_layout()
     plt.show()
 
 if __name__ == "__main__":
