@@ -16,7 +16,7 @@ MRK_C_OUT_DEFAULT = "grey"
 
 EDGE_C_DEFAULT = "black"
 
-def draw2DCenterlinesGraph(graph):
+def drawCenterlinesGraph2D(graph):
     """Assumes this kind on dictionaries:
         nodes: HCATNetwork.node.SimpleCenterlineNode
         edges: HCATNetwork.edge.BasicEdge
@@ -106,7 +106,7 @@ def draw2DCenterlinesGraph(graph):
     plt.tight_layout()
     plt.show()
 
-def draw3DCenterlinesGraph(graph):
+def drawCenterlinesGraph3D(graph):
     """Assumes this kind on dictionaries:
         nodes: HCATNetwork.node.SimpleCenterlineNode
         edges: HCATNetwork.edge.BasicEdge
@@ -201,5 +201,5 @@ if __name__ == "__main__":
     f_prova = "C:\\Users\\lecca\\Desktop\\AAMIASoftwares-research\\Data\\CAT08\\dataset00\dataset00.GML"
     from ..graph import loadGraph
     g_ = loadGraph(f_prova)
-    draw2DCenterlinesGraph(graph=g_)
-    draw3DCenterlinesGraph(graph=g_)
+    drawCenterlinesGraph2D(graph=g_)
+    drawCenterlinesGraph3D(graph=g_)
