@@ -12,6 +12,9 @@ IMPORTANT:
 Node ids MUST be strings when creating nodes for NetworkX. They can be floats or any hashable python object, but in reading/writing for
 saving the file, all gets lost. To ensure continuity between a graph created on the fly and another one
 opened from a file, use strings (even better if str(i), where i is an integer).
+
+To run as a module, activate the venv, go inside the HCATNetwork parent directory,
+and use: python -m HCATNetwork.node.node
 """
 import itertools
 from enum import Enum, auto

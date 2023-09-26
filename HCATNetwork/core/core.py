@@ -4,6 +4,9 @@ Here are defined the basic dictionary type, standards and functionalities.
 
 CoreDict must be the parent class of every node, edge and graph dictionary, as it implements
 runtime type checking and dict initialisation starting from dictionary keys definitions with types.
+
+To run as a module, activate the venv, go inside the HCATNetwork parent directory,
+and use: python -m HCATNetwork.core.core
 """
 from collections import UserDict
 

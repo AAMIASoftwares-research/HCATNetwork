@@ -14,6 +14,9 @@ Here, the information is encoded in standard containers, depending on the type o
 Loading and Saving:
 The GML file tipe is chosen to hold graph data, as it is widely supported and does not rely
 on insecure python libraries as other do. NetworkX is used as a load/save interface.
+
+To run as a module, activate the venv, go inside the HCATNetwork parent directory,
+and use: python -m HCATNetwork.graph.graph
 """
 import os, sys, copy, json
 from datetime import datetime, timezone
@@ -217,7 +220,7 @@ class HeartDominance(Enum):
 
 if __name__ == "__main__":
     print("Running 'HCATNetwork.graph' module")
-
+    
     # example: save a graph with nodes holding a random ndarray, and see what happens
     attr_dict = BasicCenterlineGraph
     attr_dict["image_id"] = "nessuna immagine"

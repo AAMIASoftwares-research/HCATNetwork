@@ -1,3 +1,7 @@
+"""Drawing utility for the HCATNetwork module.
+To run as a module, activate the venv, go inside the HCATNetwork parent directory,
+and use: python -m HCATNetwork.draw.draw
+"""
 import matplotlib.pyplot as plt
 from matplotlib.lines import Line2D
 from matplotlib.collections import LineCollection
@@ -6,6 +10,7 @@ import networkx
 import numpy
 
 from ..node import SimpleCenterlineNode, ArteryPointTopologyClass, ArteryPointTree
+
 
 MRK_C_IN_RCA = "firebrick"
 MRK_C_IN_LCA = "navy"
@@ -198,7 +203,7 @@ def drawCenterlinesGraph3D(graph):
     plt.show()
 
 if __name__ == "__main__":
-    f_prova = "C:\\Users\\lecca\\Desktop\\AAMIASoftwares-research\\Data\\CAT08\\dataset00\dataset00.GML"
+    f_prova = "C:\\Users\\lecca\\Desktop\\AAMIASoftwares-research\\Data\\CAT08\\CenterlineGraphs_FromReference\\dataset00.GML"
     from ..graph import loadGraph
     g_ = loadGraph(f_prova)
     drawCenterlinesGraph2D(graph=g_)

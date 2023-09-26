@@ -28,6 +28,9 @@ from ..core.core import CoreDict
 """
 In this basic edge, only the euclidean distance between its nodes is conserved as a feature.
 The weight standard parameter is set equal to the signed distance.
+
+To run as a module, activate the venv, go inside the HCATNetwork parent directory,
+and use: python -m HCATNetwork.edge.edge
 """
 class BasicEdge(CoreDict):
     weight: float
@@ -53,7 +56,5 @@ if __name__ == "__main__":
 
     d = BasicEdge()
     d["weight"] = 0.9
-    print(d.isValid())
-    d.setNegativeSignedDistance()
     print(d.isValid())
     print(d, type(d))
