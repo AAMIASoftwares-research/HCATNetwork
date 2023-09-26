@@ -1,4 +1,11 @@
 """Drawing utility for the HCATNetwork module.
+
+Useful development resources:
+https://matplotlib.org/stable/users/explain/artists/index.html
+https://matplotlib.org/stable/users/explain/figure/event_handling.html
+https://mpl-interactions.readthedocs.io/en/stable/
+
+
 To run as a module, activate the venv, go inside the HCATNetwork parent directory,
 and use: python -m HCATNetwork.draw.draw
 """
