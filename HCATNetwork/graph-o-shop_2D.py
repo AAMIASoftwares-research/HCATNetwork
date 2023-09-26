@@ -23,8 +23,9 @@ from matplotlib.backend_bases import MouseButton
 # imports - my modules
 from .node import SimpleCenterlineNode, ArteryPointTopologyClass, ArteryPointTree
 from .edge import BasicEdge
-from .draw import (MRK_C_IN_LCA, MRK_C_IN_RCA, MRK_C_OUT_DEFAULT, MRK_C_OUT_ENDPOINT, MRK_C_OUT_INTERSECT, MRK_C_OUT_OSTIUM, EDGE_C_DEFAULT)
-
+from .draw.styles import (COLOR_NODE_IN_LCA, COLOR_NODE_IN_RCA, COLOR_NODE_OUT_DEFAULT, 
+                          COLOR_NODE_OUT_END, COLOR_NODE_OUT_CROSS, COLOR_NODE_OUT_START, 
+                          COLOR_EDGE_DEFAULT)
 
 
 
