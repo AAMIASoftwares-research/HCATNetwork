@@ -138,7 +138,7 @@ def loadEnums(node, key, clss) -> Enum:
         raise ValueError(f"Error in loading graph nodes data: {type(clss)} does not have {node[key]} member.")
     return out
 
-def loadGraph(file_path: str) ->    networkx.classes.graph.Graph|\
+def loadGraph(file_path: str) -> networkx.classes.graph.Graph|\
                                     networkx.classes.digraph.DiGraph|\
                                     networkx.classes.multigraph.MultiGraph|\
                                     networkx.classes.multidigraph.MultiDiGraph:
@@ -194,10 +194,14 @@ def loadGraph(file_path: str) ->    networkx.classes.graph.Graph|\
 ########################
 # Basic Centerline Graph
 ########################
-"""The basic centerline graph
-"""
 
 class BasicCenterlineGraph(CoreDict):
+    """The basic centerline graph
+    There is no way of imposing this in python, but the graph should contain:
+        - nodes of type SimpleCenterlineNode
+        - edges of type BasicEdge.
+    Both trees (l and r) are stored in the same graph.
+    """
     image_id: str
     are_left_right_disjointed: bool
 
@@ -206,7 +210,7 @@ class BasicCenterlineGraph(CoreDict):
 # Coronary Artery Tree Graph
 ############################
 """Coronary Artery Tree Graph
-This is the most complete graph, holding everything needed for coronary artery tree.
+This is the most complete graph, holding everything needed for representing a coronary artery tree.
 Both trees (l and r) are stored in the same graph.
 In some patients, it could happen that the left and right subgraphs are not disjointed, hence the need to have just one graph.
 For the future.

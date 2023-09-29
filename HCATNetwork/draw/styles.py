@@ -6,6 +6,7 @@
 COLOR_NODE_IN_DEFAULT = "grey"
 COLOR_NODE_IN_RCA     = "firebrick"
 COLOR_NODE_IN_LCA     = "navy"
+COLOR_NODE_IN_BOTH    = "purple"
 
 
 # Node colors - outside
