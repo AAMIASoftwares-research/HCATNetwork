@@ -204,6 +204,45 @@ class BasicCenterlineGraph(CoreDict):
     """
     image_id: str
     are_left_right_disjointed: bool
+    
+    @staticmethod
+    def getCoronaryOstiumNodeIdRelativeToNode(graph: networkx.classes.graph.Graph, node_id: str) -> tuple[str]:
+        """Get the coronary ostium node id relative to the node with id node_id
+        Output: a 1-tuple or 2-tuple of strings, depending on whether the node is associated with one or both arterial trees.
+                The 2-tuple always contains the left ostium node id as the first element, and the right ostium node id as the second element.
+        """
+        if not node_id in [id for id in graph.nodes]:
+            raise ValueError(f"Node with id \"{node_id}\" is not in graph.")
+        node = graph.nodes[node_id]
+        # Node is a coronary ostium
+        if node['topology_class'].value == ArteryPointTopologyClass.OSTIUM.value:
+            return tuple([node_id])
+        # Node is not a coronary ostium
+        # The node could be associated with either one or both arterial trees.
+        # There should be no nodes asssociated with no artrial trees.
+        if node['arterial_tree'].value != ArteryPointTree.RL.value:
+            # The node is associated with a single tree
+            for n in graph.nodes:
+                if graph.nodes[n]['arterial_tree'].value == node['arterial_tree'].value and graph.nodes[n]['topology_class'].value == ArteryPointTopologyClass.OSTIUM.value:
+                    return tuple([n])
+        else:
+            # The node is associated with both arterial trees
+            count_hits_ = 0
+            left_ostium_n, right_ostium_n = None, None
+            for n in graph.nodes:
+                if graph.nodes[n]['topology_class'].value == ArteryPointTopologyClass.OSTIUM.value:
+                    if graph.nodes[n]['arterial_tree'].value == ArteryPointTree.LEFT.value:
+                        left_ostium_n = n
+                    elif graph.nodes[n]['arterial_tree'].value == ArteryPointTree.RIGHT.value:
+                        right_ostium_n = n
+                    else:
+                        raise RuntimeError(f"Node {n} is not associated with any arterial tree.")
+                    count_hits_ += 1
+                    if count_hits_ == 2:
+                        return tuple(left_ostium_n, right_ostium_n)
+
+        
+        
 
 
 ############################
