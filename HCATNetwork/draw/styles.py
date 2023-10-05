@@ -68,14 +68,19 @@ ALPHA_HIGHLIGHT_NODE = 0.6
 ####################
 
 COLOR_INFO_ARROW = "#343a40"
+INFO_ARROW_LINESTYLE = "-"
+INFO_ARROW_CAPSTYLE = "round"
 
 ####################
 # TEXTBOXES
 ####################
 
 COLOR_INFO_TEXT = "#343a40"
-INFO_TEXT_FONT = "monospace"
+INFO_TEXT_FONTFAMILY = "monospace"
+INFO_TEXT_FONTWEIGHT = "light"
+INFO_TEXT_FONTSIZE = 8.0
 
 COLOR_INFO_BOX_FACE = "#ced4da"
 COLOR_INFO_BOX_EDGE = "#343a40"
+INFO_BBOX_EDGE_WIDTH = 0.75
 

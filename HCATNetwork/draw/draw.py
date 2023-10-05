@@ -30,6 +30,15 @@ class BasicCenterlineGraphInteractiveDrawer():
 
     Colors and styles are defined in HCATNetwork.draw.styles.
 
+    Artists layers by zorder:
+    * 1.0: edges
+    * 2.0: nodes
+    * 2.1: nodes highlight
+    * 3.0: nodes info textbox (lower left)
+    * 4.0: menu textbox (lower right)
+           sub-menus will appear on top of the menu with zorders in (4.0;5.0)
+    * 5.0: legend (upper right)
+
     See Also
     --------
     HCATNetwork.graph.BasicCenterlineGraph
@@ -94,10 +103,13 @@ class BasicCenterlineGraphInteractiveDrawer():
         # Legend
         self.legend_artist = self.getLegendArtist()
         # Node info textbox
-        #self.node_info_textbox = self.getNodeInfoTextbox()
-
+        self.textbox_artist_nodes_info: matplotlib.text.Annotation = self.getNodeInfoTextbox()
+        self.ax.add_artist(self.textbox_artist_nodes_info)
+        self.textbox_artist_nodes_info.set_visible(True)
         # Menu textbox
-
+        self.textbox_artist_menu: matplotlib.text.Text = self.getMainMenuTextbox()
+        self.ax.add_artist(self.textbox_artist_menu)
+        self.textbox_artist_menu.set_visible(True)
         # Interactive effects: utility variables
 
         # Interactive effects: connect events
@@ -304,7 +316,6 @@ class BasicCenterlineGraphInteractiveDrawer():
         )
         return ax
 
-
     def getLegendArtist(self) -> matplotlib.legend.Legend:
         legend_elements = [
             Line2D([0], [0], marker='o', markerfacecolor=COLOR_NODE_FACE_RCA, color="w",                   markersize=10, lw=0),
@@ -329,7 +340,93 @@ class BasicCenterlineGraphInteractiveDrawer():
         return legend_artist
 
     def getNodeInfoTextbox(self) -> matplotlib.text.Annotation:
-        pass
+        """Returns a matplotlib.text.Annotation object with the node information.
+        The textbox is not visible by default.
+        The textbox is populated with the default empty string.
+        """
+        default_arrow_x = numpy.mean(self.nodes_xy_positions[:,0])
+        default_arrow_y = numpy.mean(self.nodes_xy_positions[:,1])
+        node_hover_annotation = matplotlib.text.Annotation(
+            # annotation position (arrow points to this position)
+            xy=(default_arrow_x,default_arrow_y), xycoords='data',
+            # text
+            # https://matplotlib.org/stable/api/text_api.html#matplotlib.text.Text
+            text="debug text",
+            xytext=(10, 10), textcoords='axes points',
+            color=COLOR_INFO_TEXT,
+            fontfamily=INFO_TEXT_FONTFAMILY, fontsize=INFO_TEXT_FONTSIZE, fontweight=INFO_TEXT_FONTWEIGHT,
+            horizontalalignment='left', verticalalignment='bottom',
+            # bbox
+            # https://matplotlib.org/stable/api/_as_gen/matplotlib.patches.FancyBboxPatch.html#matplotlib.patches.FancyBboxPatch
+            bbox=dict(
+                boxstyle='round',
+                facecolor=COLOR_INFO_BOX_FACE,
+                edgecolor=COLOR_INFO_BOX_EDGE,
+                linewidth=INFO_BBOX_EDGE_WIDTH
+            ),
+            # arrow and end patch
+            arrowprops=dict(
+                # https://matplotlib.org/stable/api/_as_gen/matplotlib.patches.FancyArrowPatch.html#matplotlib.patches.FancyArrowPatch
+                arrowstyle=INFO_ARROW_LINESTYLE,
+                capstyle=INFO_ARROW_CAPSTYLE,
+                color=COLOR_INFO_ARROW,
+                patchB=None,
+                shrinkA=0, shrinkB=0
+            ),
+            zorder=3.0
+        )
+        return node_hover_annotation
+
+    def getMainMenuDIsplayText(self) -> str:
+        """Returns a string with the main menu display text."""
+        MAIN_MENU_KEY_OPTIONS = ["n"]
+        MAIN_MENU_KEY_TEXT = ["toggle nodes and switch between edges views."]
+        # build the menu
+        text = "MAIN MENU"
+        for k, ktext in zip(MAIN_MENU_KEY_OPTIONS, MAIN_MENU_KEY_TEXT):
+            text += f"\n{k}:  {ktext}"
+        return text
+    
+    def getMainMenuTextbox(self) -> matplotlib.text.Text:
+        """Returns a matplotlib.text.Text artist with the menu information.
+        The textbox is always visible on top of everything.
+        The textbox is populated with the main menu at first.
+        Then, if the selected option has a submenu, the submenu opens on top of this menu,
+        as a deck of stacked cards towards the center of the axes.
+        This function does not handle the sub-menus.
+        """
+        main_menu_text = self.getMainMenuDIsplayText()
+        menu_textbox = matplotlib.text.Text(
+            # text
+            # https://matplotlib.org/stable/api/text_api.html#matplotlib.text.Text
+            text=self.getMainMenuDIsplayText(),
+            x=100, y=100,
+            # transform=None, ---> fallo stare fermo a destra
+            #######################################
+            #####################################  #  to do from here on
+            #####################################
+            color=COLOR_INFO_TEXT,
+            fontfamily=INFO_TEXT_FONTFAMILY, fontsize=INFO_TEXT_FONTSIZE*0.8, fontweight=INFO_TEXT_FONTWEIGHT,
+            horizontalalignment='left', verticalalignment='top',
+            # bbox
+            # https://matplotlib.org/stable/api/_as_gen/matplotlib.patches.FancyBboxPatch.html#matplotlib.patches.FancyBboxPatch
+            bbox=dict(
+                boxstyle='round',
+                facecolor=COLOR_INFO_BOX_FACE,
+                edgecolor=COLOR_INFO_BOX_EDGE,
+                linewidth=INFO_BBOX_EDGE_WIDTH
+            ),
+            zorder=4.0
+        )
+        return menu_textbox
+
+
+
+
+
+
+
+
 
 if __name__ == "__main__":
     f_prova = "C:\\Users\\lecca\\Desktop\\AAMIASoftwares-research\\Data\\CAT08\\CenterlineGraphs_FromReference\\dataset00.GML"
