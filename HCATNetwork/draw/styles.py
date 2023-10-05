@@ -1,6 +1,12 @@
 
 """ Unified colors and style-sheet for the heart network drawing
+Dependencies
+------------
+matplotlib
+palettable (https://jiffyclub.github.io/palettable/)
 """
+import matplotlib
+
 
 MILLIMETERS_TO_INCHES = 0.0393701
 
@@ -20,6 +26,11 @@ AXES_GRID_COLOR = "#ced4da"
 AXES_GRID_ALPHA = 0.8
 AXES_GRID_LINESTYLE = "--"
 AXES_GRID_LINEWIDTH = 1.0
+
+AXES_TEXT_COLOR = "#343a40"
+AXES_TEXT_SIZE = 8.0
+AXES_TEXT_SIZE_SMALL = 6.0
+AXES_TEXT_FONTFAMILY = "monospace"
 
 
 ####################
@@ -42,6 +53,9 @@ COLOR_NODE_EDGE_END     = "red"
 COLOR_EDGE_DEFAULT = "#22403d"
 EDGE_LINEWIDTH = 0.7
 
+EDGE_COLORMAP_DISTANCE = matplotlib.colormaps["turbo_r"]
+EDGE_COLORMAP_RADIUS = matplotlib.colormaps["copper_r"]
+
 ##########################
 # INTERACTIVE HIGHLIGHTING
 ##########################
@@ -50,12 +64,18 @@ COLOR_HIGHLIGHT_NODE = "#faed00"
 ALPHA_HIGHLIGHT_NODE = 0.6
 
 ####################
-# INFO TEXTBOX
+# ARROWS/POINTERS
 ####################
-
-COLOR_INFO_TEXT = "#343a40"
 
 COLOR_INFO_ARROW = "#343a40"
 
+####################
+# TEXTBOXES
+####################
+
+COLOR_INFO_TEXT = "#343a40"
+INFO_TEXT_FONT = "monospace"
+
 COLOR_INFO_BOX_FACE = "#ced4da"
 COLOR_INFO_BOX_EDGE = "#343a40"
+

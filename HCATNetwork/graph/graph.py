@@ -196,14 +196,33 @@ def loadGraph(file_path: str) -> networkx.classes.graph.Graph|\
 ########################
 
 class BasicCenterlineGraph(CoreDict):
-    """The basic centerline graph
-    There is no way of imposing this in python, but the graph should contain:
-        - nodes of type SimpleCenterlineNode
-        - edges of type BasicEdge.
-    Both trees (l and r) are stored in the same graph.
+    """The basic centerline graph static dictionary.
+
+    There is no way of hard-imposing it in python, but the graph should contain:
+        * nodes of type HCATNetwork.node.SimpleCenterlineNode,
+        * edges of type HCATNetwork.edge.BasicEdge.
+
+    Both trees (left and right) are stored in the same NetworkX.Graph structure.
+    In some patients, it could happen that the left and right subgraphs are not disjointed, hence the need to have just one graph.
+    BasicCenterlineGraph, and all its connected algorithm, assumes that the coronary ostia are disjointed, meaning that the 
+    coronary ostia should not be overlapping or too near to each other. No control is actively performed to check this condition.
+    
+    Keys
+    ----
+    image_id : str
+        The image id of the image from which the graph was extracted.
+        This string has no fixed format, and can be anything, but it should be clear enough
+        to identify the image, and possibly be consistent for images coming from the same source/dataset.
+    
+    are_left_right_disjointed : bool
+        ``True`` if the left and right coronary trees are disjointed, ``False`` otherwise.
+
+    See Also
+    --------
+    HCATNetwork.core.CoreDict
     """
-    image_id: str
-    are_left_right_disjointed: bool
+    image_id : str
+    are_left_right_disjointed : bool
     
     @staticmethod
     def getCoronaryOstiumNodeIdRelativeToNode(graph: networkx.classes.graph.Graph, node_id: str) -> tuple[str]:
@@ -236,11 +255,34 @@ class BasicCenterlineGraph(CoreDict):
                     elif graph.nodes[n]['arterial_tree'].value == ArteryPointTree.RIGHT.value:
                         right_ostium_n = n
                     else:
-                        raise RuntimeError(f"Node {n} is not associated with any arterial tree.")
+                        raise RuntimeError(f"Node {n} is a coronary ostium associated with no arterial tree (nor left, nor right).")
                     count_hits_ += 1
                     if count_hits_ == 2:
-                        return tuple(left_ostium_n, right_ostium_n)
+                        return tuple([left_ostium_n, right_ostium_n])
+        # If the code reaches this point, it means that the node is not associated with any arterial tree
+        raise RuntimeError(f"Node {n} is a coronary ostium associated with no arterial tree (nor left, nor right).")
 
+    @staticmethod
+    def getCoronaryOstiaNodeId(graph: networkx.classes.graph.Graph) -> tuple():
+        """Gets the left and right coronary ostia node ids.
+        Returns a  2-tuple of strings, where the first element is the left ostium node id, and the second element is the right ostium node id.
+        If an ostium cannot be found, the element will be set to None.
+        """
+        count_hits_ = 0
+        left_ostium_n, right_ostium_n = None, None
+        for n in graph.nodes:
+            if graph.nodes[n]['topology_class'].value == ArteryPointTopologyClass.OSTIUM.value:
+                if graph.nodes[n]['arterial_tree'].value == ArteryPointTree.LEFT.value:
+                    left_ostium_n = n
+                elif graph.nodes[n]['arterial_tree'].value == ArteryPointTree.RIGHT.value:
+                    right_ostium_n = n
+                else:
+                    raise RuntimeError(f"Node {n} is a coronary ostium associated with no arterial tree (nor left, nor right).")
+                count_hits_ += 1
+                if count_hits_ == 2:
+                    return tuple([left_ostium_n, right_ostium_n])
+        # If the code reaches this point, it means that the graph does not have two ostia, so return the tuple with a None element
+        return tuple([left_ostium_n, right_ostium_n])
         
         
 
