@@ -50,15 +50,14 @@ class BasicCenterlineGraphInteractiveDrawer():
     ax: matplotlib.axes.Axes
     graph: networkx.Graph
     def __init__(self, figure: matplotlib.figure.Figure, axes: matplotlib.axes.Axes, graph: networkx.Graph):
-        """Given a NetworkX graph holding a BasicCenterlineGraph, draw it interactively in 2D on the ax Axes.
-
-        Nodes are drawn as circles, with different colors for the different arterial trees and topological classes, at zorder=2.0.
-        Edges are drawn as lines, at zorder=1.0.
+        """Given a NetworkX graph holding a BasicCenterlineGraph, draw it interactively in 2D on the ax Axes contained in the Figure.
         """
         self.fig: matplotlib.figure.Figure = figure
         self.ax: matplotlib.axes.Axes = axes
         self.graph: networkx.Graph = graph
+        #######
         # Nodes
+        #######
         self.nodes_facecolor_map_dict = {
             ArteryPointTree.RIGHT.value: COLOR_NODE_FACE_RCA,
             ArteryPointTree.LEFT.value: COLOR_NODE_FACE_LCA,
@@ -80,39 +79,69 @@ class BasicCenterlineGraphInteractiveDrawer():
         self.nodes_r = numpy.array(self.getNodesRadiiList())
         self.nodes_artist_collectionIndex_to_nodeId_map = numpy.array([n for n in self.graph.nodes])
         self.nodes_artist: matplotlib.collections.CircleCollection = self.getNodesArtist()
-        self.nodes_artist.set_visible(False)
+        self.nodes_artist.set_visible(True)
         self.ax.add_collection(self.nodes_artist)
+        #######
+        # Edges
+        #######
         # Edges - basic
         self.edges_xy_positions = numpy.array(self.getEdgesPositionsList())
         self.edges_artist_collectionIndex_to_edgeIdAndData_map = numpy.array([(u_,v_,a) for (u_,v_,a) in self.graph.edges(data=True)])
         self.edges_artist_monocrome: matplotlib.collections.LineCollection = self.getNodesArtistMonocrome()
-        self.edges_artist_monocrome.set_visible(False)
+        self.edges_artist_monocrome.set_visible(True)
         self.ax.add_collection(self.edges_artist_monocrome)
         # Edges - colormapped by distance from ostia
         self.edges_artist_colormapped_distance: matplotlib.collections.LineCollection = self.getNodesArtistColormappedDistance()
         self.edges_artist_colormapped_distance.set_visible(False)
         self.ax.add_collection(self.edges_artist_colormapped_distance)
-        self.colorbar_edges_colormapped_distance: matplotlib.axes.Axes = self.getEdgesDistanceColorbar()
-        self.colorbar_edges_colormapped_distance.set_visible(False)
         # Edges - colormapped by radius of the first node
         self.edges_artist_colormapped_radius: matplotlib.collections.LineCollection = self.getNodesArtistColormappedRadius()
-        self.edges_artist_colormapped_radius.set_visible(True)
+        self.edges_artist_colormapped_radius.set_visible(False)
         self.ax.add_collection(self.edges_artist_colormapped_radius)
-        self.colorbar_edges_colormapped_radius: matplotlib.axes.Axes = self.getEdgesRadiusColorbar()
-        self.colorbar_edges_colormapped_radius.set_visible(True)
-        # Legend
+        #########
+        # Legends
+        #########
+        # Nodes legend
         self.legend_artist = self.getLegendArtist()
-        # Node info textbox
-        self.textbox_artist_nodes_info: matplotlib.text.Annotation = self.getNodeInfoTextbox()
-        self.ax.add_artist(self.textbox_artist_nodes_info)
-        self.textbox_artist_nodes_info.set_visible(True)
+        self.ax.add_artist(self.legend_artist)
+        self.legend_artist.set_visible(True)
+        # Edges colormap legend: distance from ostia
+        self.colorbar_edges_colormapped_distance: matplotlib.axes.Axes = self.getEdgesDistanceColorbar()
+        self.colorbar_edges_colormapped_distance.set_visible(False)
+        # Edges colormap legend: radius of the connected node
+        self.colorbar_edges_colormapped_radius: matplotlib.axes.Axes = self.getEdgesRadiusColorbar()
+        self.colorbar_edges_colormapped_radius.set_visible(False)
+        ############
+        # text Boxes
+        ############
+        # Info textbox
+        self.textbox_artist_info: matplotlib.text.Annotation = self.getInfoTextboxArtist()
+        self.ax.add_artist(self.textbox_artist_info)
+        self.textbox_artist_info.set_visible(True)
         # Menu textbox
-        self.textbox_artist_menu: matplotlib.text.Text = self.getMainMenuTextbox()
+        self.textbox_artist_menu: matplotlib.offsetbox.AnchoredText = self.getMainMenuTextboxArtist()
         self.ax.add_artist(self.textbox_artist_menu)
         self.textbox_artist_menu.set_visible(True)
-        # Interactive effects: utility variables
-
-        # Interactive effects: connect events
+        #####################
+        # Interactive effects
+        #####################
+        # Nodes and edges drawing styles carousel
+        # Key pressed event with key "n" will cycle through the following styles:
+        # 0: Colored nodes with mono-chromatic edges
+        # 1: No nodes, distance from coronary ostia colormapped edges
+        # 2: No nodes, radius colormapped edges
+        self.carousel_current_index = 0
+        self.carousel_artists_cycler = [
+            [self.nodes_artist, self.edges_artist_monocrome],
+            [self.edges_artist_colormapped_distance],
+            [self.edges_artist_colormapped_radius]
+        ]
+        self.carousel_legends_cycler = [
+            self.legend_artist,
+            self.colorbar_edges_colormapped_distance,
+            self.colorbar_edges_colormapped_radius
+        ]
+        self.fig.canvas.mpl_connect("key_press_event", self.on_key_press_event_carousel)
 
     
     def getNodesPositionsList(self) -> list[numpy.ndarray]:
@@ -318,11 +347,11 @@ class BasicCenterlineGraphInteractiveDrawer():
 
     def getLegendArtist(self) -> matplotlib.legend.Legend:
         legend_elements = [
-            Line2D([0], [0], marker='o', markerfacecolor=COLOR_NODE_FACE_RCA, color="w",                   markersize=10, lw=0),
-            Line2D([0], [0], marker='o', markerfacecolor=COLOR_NODE_FACE_LCA, color="w",                   markersize=10, lw=0),
-            Line2D([0], [0], marker='o', markerfacecolor="w",                 color=COLOR_NODE_EDGE_START, markersize=10, lw=0),
-            Line2D([0], [0], marker='o', markerfacecolor="w",                 color=COLOR_NODE_EDGE_CROSS, markersize=10, lw=0),
-            Line2D([0], [0], marker='o', markerfacecolor="w",                 color=COLOR_NODE_EDGE_END,   markersize=10, lw=0)
+            Line2D([0], [0], marker='o', markerfacecolor=COLOR_NODE_FACE_RCA, color=COLOR_INFO_BOX_FACE,   markersize=10, lw=0),
+            Line2D([0], [0], marker='o', markerfacecolor=COLOR_NODE_FACE_LCA, color=COLOR_INFO_BOX_FACE,   markersize=10, lw=0),
+            Line2D([0], [0], marker='o', markerfacecolor=COLOR_INFO_BOX_FACE, color=COLOR_NODE_EDGE_START, markersize=10, lw=0),
+            Line2D([0], [0], marker='o', markerfacecolor=COLOR_INFO_BOX_FACE, color=COLOR_NODE_EDGE_CROSS, markersize=10, lw=0),
+            Line2D([0], [0], marker='o', markerfacecolor=COLOR_INFO_BOX_FACE, color=COLOR_NODE_EDGE_END,   markersize=10, lw=0)
         ]
 
         legend_artist = matplotlib.legend.Legend(
@@ -330,20 +359,36 @@ class BasicCenterlineGraphInteractiveDrawer():
             handles=legend_elements,
             labels=["RCA", "LCA", "OSTIA", "INTERSECTIONS", "ENDPOINTS"],
             loc="upper right",
-            fontsize=8.0,
+            prop={
+                # Legend text font properties
+                "size": INFO_TEXT_FONTSIZE,
+                "family": INFO_TEXT_FONTFAMILY,
+                "weight": INFO_TEXT_FONTWEIGHT
+            },
+            labelcolor=COLOR_INFO_TEXT,
             title="Node Colors Legend",
-            title_fontsize=8.0,
-            framealpha=0.0,
+            title_fontproperties={
+                "size": 7.0,
+                "family": INFO_TEXT_FONTFAMILY,
+                "weight": "bold"
+            },
+            framealpha=0.95,
             facecolor=COLOR_INFO_BOX_FACE,
-            edgecolor=COLOR_INFO_BOX_EDGE
+            edgecolor=COLOR_INFO_BOX_EDGE,
+            borderpad=0.5
         )
         return legend_artist
 
-    def getNodeInfoTextbox(self) -> matplotlib.text.Annotation:
-        """Returns a matplotlib.text.Annotation object with the node information.
+    def getInfoTextboxArtist(self) -> matplotlib.text.Annotation:
+        """Returns a matplotlib.text.Annotation object with the information text.
         The textbox is not visible by default.
-        The textbox is populated with the default empty string.
+        The textbox is populated with the default debug string.
+        To change the text of the textbox, use the set_text() method of the artist.
         """
+        # To keep a textbox fixed at a location, one might also use
+        # matplotlib.offsetbox.AnnotationBbox. However, since the info textbox is set in
+        # the lower-left corner, there is no need of using that, and the straightforward Annotation
+        # is more intuitive.
         default_arrow_x = numpy.mean(self.nodes_xy_positions[:,0])
         default_arrow_y = numpy.mean(self.nodes_xy_positions[:,1])
         node_hover_annotation = matplotlib.text.Annotation(
@@ -352,7 +397,7 @@ class BasicCenterlineGraphInteractiveDrawer():
             # text
             # https://matplotlib.org/stable/api/text_api.html#matplotlib.text.Text
             text="debug text",
-            xytext=(10, 10), textcoords='axes points',
+            xytext=(7, 7), textcoords='axes points',
             color=COLOR_INFO_TEXT,
             fontfamily=INFO_TEXT_FONTFAMILY, fontsize=INFO_TEXT_FONTSIZE, fontweight=INFO_TEXT_FONTWEIGHT,
             horizontalalignment='left', verticalalignment='bottom',
@@ -362,7 +407,8 @@ class BasicCenterlineGraphInteractiveDrawer():
                 boxstyle='round',
                 facecolor=COLOR_INFO_BOX_FACE,
                 edgecolor=COLOR_INFO_BOX_EDGE,
-                linewidth=INFO_BBOX_EDGE_WIDTH
+                linewidth=INFO_BBOX_EDGE_WIDTH,
+                alpha=0.95
             ),
             # arrow and end patch
             arrowprops=dict(
@@ -377,49 +423,73 @@ class BasicCenterlineGraphInteractiveDrawer():
         )
         return node_hover_annotation
 
-    def getMainMenuDIsplayText(self) -> str:
+    def getMainMenuDisplayText(self) -> str:
         """Returns a string with the main menu display text."""
-        MAIN_MENU_KEY_OPTIONS = ["n"]
-        MAIN_MENU_KEY_TEXT = ["toggle nodes and switch between edges views."]
+        MAIN_MENU_KEY_OPTIONS = ["n", "p"]
+        MAIN_MENU_KEY_TEXT = ["toggle views.", "toggle projections."]
         # build the menu
         text = "MAIN MENU"
         for k, ktext in zip(MAIN_MENU_KEY_OPTIONS, MAIN_MENU_KEY_TEXT):
             text += f"\n{k}:  {ktext}"
         return text
     
-    def getMainMenuTextbox(self) -> matplotlib.text.Text:
-        """Returns a matplotlib.text.Text artist with the menu information.
-        The textbox is always visible on top of everything.
+    def getMainMenuTextboxArtist(self) -> matplotlib.offsetbox.AnchoredText:
+        """Returns a matplotlib.offsetbox.AnchoredText artist anchored to the lower right corner of
+        the axes with the menu information.
+        The textbox is always visible on top of everything (zorder 5.0).
         The textbox is populated with the main menu at first.
-        Then, if the selected option has a submenu, the submenu opens on top of this menu,
-        as a deck of stacked cards towards the center of the axes.
-        This function does not handle the sub-menus.
+        Then, if the selected option has a submenu, the submenu gets printed instead of the main menu
+        via the set_text() method of the artist.
         """
-        main_menu_text = self.getMainMenuDIsplayText()
-        menu_textbox = matplotlib.text.Text(
-            # text
-            # https://matplotlib.org/stable/api/text_api.html#matplotlib.text.Text
-            text=self.getMainMenuDIsplayText(),
-            x=100, y=100,
-            # transform=None, ---> fallo stare fermo a destra
-            #######################################
-            #####################################  #  to do from here on
-            #####################################
-            color=COLOR_INFO_TEXT,
-            fontfamily=INFO_TEXT_FONTFAMILY, fontsize=INFO_TEXT_FONTSIZE*0.8, fontweight=INFO_TEXT_FONTWEIGHT,
-            horizontalalignment='left', verticalalignment='top',
-            # bbox
-            # https://matplotlib.org/stable/api/_as_gen/matplotlib.patches.FancyBboxPatch.html#matplotlib.patches.FancyBboxPatch
-            bbox=dict(
-                boxstyle='round',
-                facecolor=COLOR_INFO_BOX_FACE,
-                edgecolor=COLOR_INFO_BOX_EDGE,
-                linewidth=INFO_BBOX_EDGE_WIDTH
-            ),
-            zorder=4.0
+        main_menu_text = self.getMainMenuDisplayText()
+        menu_textbox = matplotlib.offsetbox.AnchoredText(
+            # https://matplotlib.org/stable/api/offsetbox_api.html#matplotlib.offsetbox.AnchoredText
+            # https://matplotlib.org/stable/api/offsetbox_api.html#matplotlib.offsetbox.AnchoredOffsetbox
+            s=main_menu_text,
+            loc="lower right",
+            frameon=True,
+            bbox_to_anchor=(1.0, 0.0),
+            bbox_transform=self.ax.transAxes,
+            borderpad=1.0,
+            # Properties to be passed to the matplotlib.text.Text artist instance used to draw the text.
+            prop={
+                "family": INFO_TEXT_FONTFAMILY,
+                "size": INFO_TEXT_FONTSIZE*0.9,
+                "weight": INFO_TEXT_FONTWEIGHT,
+                "color": COLOR_INFO_TEXT
+            },
+            zorder=5.0
+        )
+        # This line is necessary to have the menu saved when exporting the figure (apparently, not tested it)
+        menu_textbox.set_clip_on(True)
+        # matplotlib.offsetbox.AnchoredText.patch is a matplotlib.patches.FancyBboxPatch instance
+        menu_textbox.patch.set(
+            boxstyle="round",
+            facecolor=COLOR_INFO_BOX_FACE,
+            edgecolor=COLOR_INFO_BOX_EDGE,
+            linewidth=INFO_BBOX_EDGE_WIDTH,
+            alpha=0.95
         )
         return menu_textbox
 
+    # Interactive effects
+
+    def on_key_press_event_carousel(self, event):
+        print("Key pressed: ", event.key)
+        if event.key == "n":
+            print("Getting inside of the carousel...")
+            # Set all elements' and legends artists to invisible
+            for artist_list, legend in zip(self.carousel_artists_cycler, self.carousel_legends_cycler):
+                for artist in artist_list:
+                    artist.set_visible(False)
+                legend.set_visible(False)
+            # Now set visible all legend and artists of the next style
+            self.carousel_current_index = (self.carousel_current_index + 1) % len(self.carousel_artists_cycler)
+            for artist in self.carousel_artists_cycler[self.carousel_current_index]:
+                artist.set_visible(True)
+            self.carousel_legends_cycler[self.carousel_current_index].set_visible(True)
+            # Draw changes
+            self.fig.canvas.draw_idle()
 
 
 
