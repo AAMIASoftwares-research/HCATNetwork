@@ -58,24 +58,7 @@ class BasicCenterlineGraphInteractiveDrawer():
         #######
         # Nodes
         #######
-        self.nodes_facecolor_map_dict = {
-            ArteryPointTree.RIGHT.value: COLOR_NODE_FACE_RCA,
-            ArteryPointTree.LEFT.value: COLOR_NODE_FACE_LCA,
-            ArteryPointTree.RL.value: COLOR_NODE_FACE_BOTH
-        }
-        self.nodes_edgecolor_map_dict = {
-            ArteryPointTopologyClass.OSTIUM.value: COLOR_NODE_EDGE_START,
-            ArteryPointTopologyClass.SEGMENT.value: COLOR_NODE_EDGE_DEFAULT,
-            ArteryPointTopologyClass.ENDPOINT.value: COLOR_NODE_EDGE_END,
-            ArteryPointTopologyClass.INTERSECTION.value: COLOR_NODE_EDGE_CROSS
-        }
-        self.nodes_edgewidth_map_dict = {
-            ArteryPointTopologyClass.OSTIUM.value: 2.2,
-            ArteryPointTopologyClass.SEGMENT.value: 0.0,
-            ArteryPointTopologyClass.ENDPOINT.value: 1,
-            ArteryPointTopologyClass.INTERSECTION.value: 1.8
-        }
-        self.nodes_xy_positions = numpy.array(self.getNodesPositionsList())
+        self.nodes_positions = numpy.array(self.getNodesPositionsList())
         self.nodes_r = numpy.array(self.getNodesRadiiList())
         self.nodes_artist_collectionIndex_to_nodeId_map = numpy.array([n for n in self.graph.nodes])
         self.nodes_artist: matplotlib.collections.CircleCollection = self.getNodesArtist()
@@ -84,18 +67,20 @@ class BasicCenterlineGraphInteractiveDrawer():
         #######
         # Edges
         #######
+        
         # Edges - basic
-        self.edges_xy_positions = numpy.array(self.getEdgesPositionsList())
+        self.edges_positions = numpy.array(self.getEdgesPositionsList())
+        self.__current_projection_edges_positions = self.getEdgesSegmentsProjectedOnPlane("XY")
         self.edges_artist_collectionIndex_to_edgeIdAndData_map = numpy.array([(u_,v_,a) for (u_,v_,a) in self.graph.edges(data=True)])
-        self.edges_artist_monocrome: matplotlib.collections.LineCollection = self.getNodesArtistMonocrome()
+        self.edges_artist_monocrome: matplotlib.collections.LineCollection = self.getEdgesArtistMonocrome()
         self.edges_artist_monocrome.set_visible(True)
         self.ax.add_collection(self.edges_artist_monocrome)
-        # Edges - colormapped by distance from ostia
-        self.edges_artist_colormapped_distance: matplotlib.collections.LineCollection = self.getNodesArtistColormappedDistance()
+        # Edges - colormapped by distance from ostia of the source node
+        self.edges_artist_colormapped_distance: matplotlib.collections.LineCollection = self.getEdgesArtistColormappedDistance()
         self.edges_artist_colormapped_distance.set_visible(False)
         self.ax.add_collection(self.edges_artist_colormapped_distance)
-        # Edges - colormapped by radius of the first node
-        self.edges_artist_colormapped_radius: matplotlib.collections.LineCollection = self.getNodesArtistColormappedRadius()
+        # Edges - colormapped by radius of the source node
+        self.edges_artist_colormapped_radius: matplotlib.collections.LineCollection = self.getEdgesArtistColormappedRadius()
         self.edges_artist_colormapped_radius.set_visible(False)
         self.ax.add_collection(self.edges_artist_colormapped_radius)
         #########
@@ -117,7 +102,7 @@ class BasicCenterlineGraphInteractiveDrawer():
         # Info textbox
         self.textbox_artist_info: matplotlib.text.Annotation = self.getInfoTextboxArtist()
         self.ax.add_artist(self.textbox_artist_info)
-        self.textbox_artist_info.set_visible(True)
+        self.textbox_artist_info.set_visible(False)
         # Menu textbox
         self.textbox_artist_menu: matplotlib.offsetbox.AnchoredText = self.getMainMenuTextboxArtist()
         self.ax.add_artist(self.textbox_artist_menu)
@@ -130,29 +115,45 @@ class BasicCenterlineGraphInteractiveDrawer():
         # 0: Colored nodes with mono-chromatic edges
         # 1: No nodes, distance from coronary ostia colormapped edges
         # 2: No nodes, radius colormapped edges
-        self.carousel_current_index = 0
-        self.carousel_artists_cycler = [
+        self.viewstyle_carousel_current_index = 0
+        self.viewstyle_carousel_artists_cycler = [
             [self.nodes_artist, self.edges_artist_monocrome],
             [self.edges_artist_colormapped_distance],
             [self.edges_artist_colormapped_radius]
         ]
-        self.carousel_legends_cycler = [
+        self.viewstyle_carousel_legends_cycler = [
             self.legend_artist,
             self.colorbar_edges_colormapped_distance,
             self.colorbar_edges_colormapped_radius
         ]
-        self.fig.canvas.mpl_connect("key_press_event", self.on_key_press_event_carousel)
+        self.fig.canvas.mpl_connect("key_press_event", self.on_key_press_event_viewstyle_carousel)
+        # View plane projection carousel
+        # Key pressed event with key "p" will cycle through the following styles:
+        # 0: XY plane
+        # 1: XZ plane
+        # 2: YZ plane
+        self.viewplane_carousel_current_index = 0
+        self.viewplane_carousel_planes_list = ["XY", "XZ", "YZ"]
+        self.viewplane_carousel_planes_list_slices = [[0,1], [0,2], [1,2]]
+        self.viewplane_carousel_nodes_artists_list = [self.nodes_artist]
+        self.viewplane_carousel_edges_artists_list = [
+            self.edges_artist_monocrome,
+            self.edges_artist_colormapped_distance,
+            self.edges_artist_colormapped_radius
+        ]
+        self.fig.canvas.mpl_connect("key_press_event", self.on_key_press_event_viewplane_carousel)
+        
 
     
     def getNodesPositionsList(self) -> list[numpy.ndarray]:
-        """Returns a list of numpy.ndarray of shape (2,) with the nodes positions.
+        """Returns a list of numpy.ndarray of shape (3,) with the nodes positions.
         """
-        nodes_xy_positions = []
+        nodes_positions = []
         for n in self.graph.nodes:
-            nodes_xy_positions.append(
-                numpy.array([self.graph.nodes[n]["x"], self.graph.nodes[n]["y"]])
+            nodes_positions.append(
+                numpy.array([self.graph.nodes[n]["x"], self.graph.nodes[n]["y"], self.graph.nodes[n]["z"]])
             )
-        return nodes_xy_positions
+        return nodes_positions
     
     def getNodesRadiiList(self) -> list[float]:
         """Returns a list of nodes radii.
@@ -163,20 +164,43 @@ class BasicCenterlineGraphInteractiveDrawer():
         return nodes_radii
     
     def getNodesArtist(self) -> matplotlib.collections.CircleCollection:
+        """Returns a matplotlib.collections.CircleCollection object with the nodes drawn as circles.
+        The circle sizes are proportional to the nodes radii.
+        The circle colors are mapped to the nodes arterial tree.
+        The circle edge colors are mapped to the nodes topology class.
+        By default, nodes are viewed projected to the XY plane.
+        """
+        nodes_facecolor_map_dict = {
+            ArteryPointTree.RIGHT.value: COLOR_NODE_FACE_RCA,
+            ArteryPointTree.LEFT.value: COLOR_NODE_FACE_LCA,
+            ArteryPointTree.RL.value: COLOR_NODE_FACE_BOTH
+        }
+        nodes_edgecolor_map_dict = {
+            ArteryPointTopologyClass.OSTIUM.value: COLOR_NODE_EDGE_START,
+            ArteryPointTopologyClass.SEGMENT.value: COLOR_NODE_EDGE_DEFAULT,
+            ArteryPointTopologyClass.ENDPOINT.value: COLOR_NODE_EDGE_END,
+            ArteryPointTopologyClass.INTERSECTION.value: COLOR_NODE_EDGE_CROSS
+        }
+        nodes_edgewidth_map_dict = {
+            ArteryPointTopologyClass.OSTIUM.value: 2.2,
+            ArteryPointTopologyClass.SEGMENT.value: 0.0,
+            ArteryPointTopologyClass.ENDPOINT.value: 1,
+            ArteryPointTopologyClass.INTERSECTION.value: 1.8
+        }
         c_in  = []
         c_out = []
         lw    = []
         for n in self.graph.nodes:
-            c_in.append(self.nodes_facecolor_map_dict[self.graph.nodes[n]["arterial_tree"].value])
-            c_out.append(self.nodes_edgecolor_map_dict[self.graph.nodes[n]["topology_class"].value])
-            lw.append(self.nodes_edgewidth_map_dict[self.graph.nodes[n]["topology_class"].value])
+            c_in.append(nodes_facecolor_map_dict[self.graph.nodes[n]["arterial_tree"].value])
+            c_out.append(nodes_edgecolor_map_dict[self.graph.nodes[n]["topology_class"].value])
+            lw.append(nodes_edgewidth_map_dict[self.graph.nodes[n]["topology_class"].value])
         # circle sizes (as points/pixels in the patch area) go from 10 pt to 50 pt
         radii_as_dots = self.nodes_r*MILLIMETERS_TO_INCHES*FIGURE_DPI
         circle_sizes = numpy.pi*radii_as_dots**2
         circle_sizes = 10 + 40*(circle_sizes - numpy.min(circle_sizes))/(numpy.max(circle_sizes) - numpy.min(circle_sizes))
         nodes_collection_mpl = CircleCollection(
             sizes=circle_sizes,
-            offsets=self.nodes_xy_positions,
+            offsets=self.nodes_positions[:,[0,1]],
             offset_transform=ax.transData,
             edgecolors=c_out,
             facecolors=c_in,
@@ -189,25 +213,61 @@ class BasicCenterlineGraphInteractiveDrawer():
         return nodes_collection_mpl
     
     def getEdgesPositionsList(self) -> list[numpy.ndarray]:
-        """Returns a list of NxN numpy arrays, one per each edge segment.
-        The edge segment is defined as a numpy array of shape (2,2),
-        where the first row is the first node positions [x, y],
-        and the second row is the second node position."""
+        """Returns a list of length n_edges of numpy arrays, one per each edge segment.
+        The edge segment is defined as a numpy array of shape (2,3),
+        where the first row is the source node positions [x, y, z],
+        and the second row is the target node position."""
         segs = []
         for (u_,v_) in self.graph.edges(data=False):
             nu_ = self.graph.nodes[u_]
             nv_ = self.graph.nodes[v_]
             seg_ = numpy.array(
-                [[nu_["x"], nu_["y"]],
-                 [nv_["x"], nv_["y"]]]
+                [[nu_["x"], nu_["y"], nu_["z"]],
+                 [nv_["x"], nv_["y"], nv_["z"]]]
             )
             segs.append(seg_)
         return segs
 
-    def getNodesArtistMonocrome(self) -> matplotlib.collections.LineCollection:
+    def getEdgesSegmentsProjectedOnPlane(self, projection_plane: str | None = "XY") -> list[numpy.ndarray]:
+        """Returns a list of length n_edges of numpy arrays, one per each edge segment.
+
+        The edge segment is defined as a numpy array of shape (2,2),
+        where the first row is the source node position on the projection plane,
+        and the second row is the target node position.
+        The numpy array colums are [x, y] or [x, z] or [y, z] depending on the projection plane.
+
+        Parameters
+        ----------
+        projection_plane : str, optional
+            The projection plane, by default "XY"
+            Valid values are ["XY", "XZ", "YZ"]
+
+        Returns
+        -------
+        list[numpy.ndarray]
+            List of numpy arrays of shape (2,2), one per edge in the graph, with the edge segments projected on the projection plane.
+        """
+        # projection_plane preprocessing
+        if projection_plane is None:
+            projection_plane = "XY"
+        if not projection_plane in ["XY", "XZ", "YZ"]:
+            raise ValueError(f"Unsupported projection plane: {projection_plane}")
+        if projection_plane == "XY":
+            slice = [0,1]
+        elif projection_plane == "XZ":
+            slice = [0,2]
+        elif projection_plane == "YZ":
+            slice = [1,2]
+        # get segments ready to be given to the matplotlib.collections.LineCollection artist constructor
+        segs = []
+        for e in self.edges_positions:
+            segs.append(e[:,slice])
+        return segs
+
+    def getEdgesArtistMonocrome(self) -> matplotlib.collections.LineCollection:
         """Returns a matplotlib.collections.LineCollection object with the edges drawn as mono-chromatic lines."""
-        line_collection = LineCollection(
-            self.edges_xy_positions,
+        line_collection = matplotlib.collections.LineCollection(
+            self.__current_projection_edges_positions,
             zorder=1.0,
             linewidth=0.7,
             color=COLOR_EDGE_DEFAULT
@@ -251,99 +311,99 @@ class BasicCenterlineGraphInteractiveDrawer():
         edge_distance_color_map = numpy.array(edge_distance_color_map)
         return edge_distance_color_map
     
-    def getNodesArtistColormappedDistance(self) -> matplotlib.collections.LineCollection:
+    def getEdgesArtistColormappedDistance(self) -> matplotlib.collections.LineCollection:
         """Returns a matplotlib.collections.LineCollection object with the edges drawn as lines with color mapped to the distance from the ostia."""
         # Find distance of each edge's first node from respective ostium
         edge_distance_color_map = self.getEdgesDistanceArray()
         # Get matplotlib artist and return it
-        line_collection_color = LineCollection(
-            self.edges_xy_positions,
+        line_collection = matplotlib.collections.LineCollection(
+            self.__current_projection_edges_positions,
             zorder=1.0,
             linewidth=1.5, 
             colors=EDGE_COLORMAP_DISTANCE(edge_distance_color_map/edge_distance_color_map.max()),
             capstyle="round"
         )
-        return line_collection_color
+        return line_collection
 
     def getEdgesDistanceColorbar(self) -> matplotlib.axes.Axes:
         """Returns a matplotlib.axes.Axes object (inset in self.ax) with the colorbar for the edges distance from ostia."""
         distances = self.getEdgesDistanceArray()
-        ax = self.ax.inset_axes(
+        ax_ = self.ax.inset_axes(
             bounds=[0.78, 0.915, 0.20, 0.05],
             xticks=[-0.5, 14.5],
             xticklabels=[],
             yticks=[],
             yticklabels=[],
         )
-        ax.set_title(
+        ax_.set_title(
             "Distance from ostium",
             fontfamily=AXES_TEXT_FONTFAMILY,
             fontsize=AXES_TEXT_SIZE_SMALL*1.2,
             color=AXES_TEXT_COLOR,
             y=0.7
         )
-        ax.set_xlabel(
+        ax_.set_xlabel(
             f"0 -> {distances.max():.2f} mm",
             fontfamily=AXES_TEXT_FONTFAMILY,
             fontsize=AXES_TEXT_SIZE_SMALL,
             color=AXES_TEXT_COLOR,
             labelpad=-4
         )
-        ax.imshow(
+        ax_.imshow(
             [numpy.linspace(0,1,15).tolist(), numpy.linspace(0,1,15).tolist()],
             cmap=EDGE_COLORMAP_DISTANCE,
             interpolation="bicubic"
         )
-        return ax
+        return ax_
 
-    def getNodesArtistColormappedRadius(self) -> matplotlib.collections.LineCollection:
+    def getEdgesArtistColormappedRadius(self) -> matplotlib.collections.LineCollection:
         """Returns a matplotlib.collections.LineCollection object with the edges drawn as lines with color mapped to the radius of the first node."""
         # Find distance of each edge's first node from respective ostium
         edge_node_radii_color_map = numpy.array(
             [self.graph.nodes[u_]["r"] for (u_,_) in self.graph.edges(data=False)]
         )
         # Get matplotlib artist and return it
-        line_collection_color = LineCollection(
-            self.edges_xy_positions,
+        line_collection = matplotlib.collections.LineCollection(
+            self.__current_projection_edges_positions,
             zorder=1.0,
             linewidths=0.5+2.5*edge_node_radii_color_map/edge_node_radii_color_map.max(), 
             colors=EDGE_COLORMAP_RADIUS(edge_node_radii_color_map/edge_node_radii_color_map.max()),
             capstyle="round"
         )
-        return line_collection_color
+        return line_collection
 
     def getEdgesRadiusColorbar(self):
         """Returns a matplotlib.axes.Axes object (inset in self.ax) with the colorbar for the radius of the first node of each edge."""        
         edge_node_radii_color_map = numpy.array(
             [self.graph.nodes[u_]["r"] for (u_,_) in self.graph.edges(data=False)]
         )
-        ax = self.ax.inset_axes(
+        ax_ = self.ax.inset_axes(
             bounds=[0.78, 0.915, 0.20, 0.05],
             xticks=[-0.5, 14.5],
             xticklabels=[],
             yticks=[],
             yticklabels=[],
         )
-        ax.set_title(
+        ax_.set_title(
             "Lumen radius",
             fontfamily=AXES_TEXT_FONTFAMILY,
             fontsize=AXES_TEXT_SIZE_SMALL*1.2,
             color=AXES_TEXT_COLOR,
             y=0.7
         )
-        ax.set_xlabel(
+        ax_.set_xlabel(
             f"0 -> {edge_node_radii_color_map.max():.2f} mm",
             fontfamily=AXES_TEXT_FONTFAMILY,
             fontsize=AXES_TEXT_SIZE_SMALL,
             color=AXES_TEXT_COLOR,
             labelpad=-4
         )
-        ax.imshow(
+        ax_.imshow(
             [numpy.linspace(0,1,15).tolist(), numpy.linspace(0,1,15).tolist()],
             cmap=EDGE_COLORMAP_RADIUS,
             interpolation="bicubic"
         )
-        return ax
+        return ax_
 
     def getLegendArtist(self) -> matplotlib.legend.Legend:
         legend_elements = [
@@ -389,8 +449,8 @@ class BasicCenterlineGraphInteractiveDrawer():
         # matplotlib.offsetbox.AnnotationBbox. However, since the info textbox is set in
         # the lower-left corner, there is no need of using that, and the straightforward Annotation
         # is more intuitive.
-        default_arrow_x = numpy.mean(self.nodes_xy_positions[:,0])
-        default_arrow_y = numpy.mean(self.nodes_xy_positions[:,1])
+        default_arrow_x = numpy.mean(self.nodes_positions[:,0])
+        default_arrow_y = numpy.mean(self.nodes_positions[:,1])
         node_hover_annotation = matplotlib.text.Annotation(
             # annotation position (arrow points to this position)
             xy=(default_arrow_x,default_arrow_y), xycoords='data',
@@ -474,24 +534,54 @@ class BasicCenterlineGraphInteractiveDrawer():
 
     # Interactive effects
 
-    def on_key_press_event_carousel(self, event):
-        print("Key pressed: ", event.key)
+    def on_key_press_event_viewstyle_carousel(self, event):
         if event.key == "n":
-            print("Getting inside of the carousel...")
             # Set all elements' and legends artists to invisible
-            for artist_list, legend in zip(self.carousel_artists_cycler, self.carousel_legends_cycler):
+            for artist_list, legend in zip(self.viewstyle_carousel_artists_cycler, self.viewstyle_carousel_legends_cycler):
                 for artist in artist_list:
                     artist.set_visible(False)
                 legend.set_visible(False)
             # Now set visible all legend and artists of the next style
-            self.carousel_current_index = (self.carousel_current_index + 1) % len(self.carousel_artists_cycler)
-            for artist in self.carousel_artists_cycler[self.carousel_current_index]:
+            self.viewstyle_carousel_current_index = (self.viewstyle_carousel_current_index + 1) % len(self.viewstyle_carousel_artists_cycler)
+            for artist in self.viewstyle_carousel_artists_cycler[self.viewstyle_carousel_current_index]:
                 artist.set_visible(True)
-            self.carousel_legends_cycler[self.carousel_current_index].set_visible(True)
+            self.viewstyle_carousel_legends_cycler[self.viewstyle_carousel_current_index].set_visible(True)
+            # Draw changes
+            self.fig.canvas.draw_idle()
+    
+    def on_key_press_event_viewplane_carousel(self, event):
+        if event.key == "p":
+            # Data
+            self.viewplane_carousel_current_index = (self.viewplane_carousel_current_index + 1) % len(self.viewplane_carousel_planes_list)
+            for node_artist in self.viewplane_carousel_nodes_artists_list:
+                node_artist.set_offsets(self.nodes_positions[:,self.viewplane_carousel_planes_list_slices[self.viewplane_carousel_current_index]])
+            self.__current_projection_edges_positions = self.getEdgesSegmentsProjectedOnPlane(self.viewplane_carousel_planes_list[self.viewplane_carousel_current_index])
+            for edge_artist in self.viewplane_carousel_edges_artists_list:
+                edge_artist.set_segments(self.__current_projection_edges_positions)
+            # Axis labels
+            self.ax.set_xlabel(
+                self.viewplane_carousel_planes_list[self.viewplane_carousel_current_index][0] + " [mm]"
+            )
+            self.ax.set_ylabel(
+                self.viewplane_carousel_planes_list[self.viewplane_carousel_current_index][1] + " [mm]"
+            )
+            # reset axis limits
+            self.ax.set_xlim(
+                numpy.min(self.nodes_positions[:,self.viewplane_carousel_planes_list_slices[self.viewplane_carousel_current_index][0]])-10,
+                numpy.max(self.nodes_positions[:,self.viewplane_carousel_planes_list_slices[self.viewplane_carousel_current_index][0]])+10
+            )
+            self.ax.set_ylim(
+                numpy.min(self.nodes_positions[:,self.viewplane_carousel_planes_list_slices[self.viewplane_carousel_current_index][1]])-10,
+                numpy.max(self.nodes_positions[:,self.viewplane_carousel_planes_list_slices[self.viewplane_carousel_current_index][1]])+10
+            )
             # Draw changes
             self.fig.canvas.draw_idle()
 
-
+    #######################
+    #######################
+    # NODE INFO DISPLAYER AND EDGE INFO DISPLAYER
+    #######################
+    #######################
 
 
 
