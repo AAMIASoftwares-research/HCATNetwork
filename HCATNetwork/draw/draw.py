@@ -13,11 +13,13 @@ and use: python -m HCATNetwork.draw.draw
 """
 import matplotlib
 import matplotlib.pyplot as plt
+
 from matplotlib.lines import Line2D
 from matplotlib.patches import CirclePolygon
 from matplotlib.collections import LineCollection, EllipseCollection, CircleCollection
 from matplotlib.backend_bases import Event, MouseEvent
 from mpl_toolkits.mplot3d.art3d import Line3DCollection
+
 import networkx
 import numpy
 
@@ -39,6 +41,22 @@ class BasicCenterlineGraphInteractiveDrawer():
            sub-menus will appear on top of the menu with zorders in (4.0;5.0)
     * 5.0: legend (upper right)
 
+    Usage
+    -----
+    The menu on screen shows some options.
+    * n: toggle sone data views. Availabel views are:
+        * default view (edges and nodes),
+        * edges colored by distance from ostium,
+        * edges colored by radius of source node.
+    * p: toggle projections. Available projections are:
+        * XY (default),
+        * XZ,
+        * YZ.
+
+    Other basic options are:
+    * Double left click on a node to select it and display its info in the textbox.
+    * When a node or multiple nodes are selected, use the mouse whell to scroll through the tree.
+
     See Also
     --------
     HCATNetwork.graph.BasicCenterlineGraph
@@ -58,8 +76,9 @@ class BasicCenterlineGraphInteractiveDrawer():
         #######
         # Nodes
         #######
-        self.nodes_positions = numpy.array(self.getNodesPositionsList())
-        self.nodes_r = numpy.array(self.getNodesRadiiList())
+        self.nodes_positions = self.getNodesPositions()
+        self.nodes_r = self.getNodesRadii()
+        self.nodes_distance_from_ostia = self.getNodesDistanceFromOstia()
         self.nodes_artist_collectionIndex_to_nodeId_map = numpy.array([n for n in self.graph.nodes])
         self.nodes_artist: matplotlib.collections.CircleCollection = self.getNodesArtist()
         self.nodes_artist.set_visible(True)
@@ -67,10 +86,9 @@ class BasicCenterlineGraphInteractiveDrawer():
         #######
         # Edges
         #######
-        
         # Edges - basic
-        self.edges_positions = numpy.array(self.getEdgesPositionsList())
-        self.__current_projection_edges_positions = self.getEdgesSegmentsProjectedOnPlane("XY")
+        self.edges_positions = self.getEdgesPositions()
+        self.__current_projection_edges_positions = self.edges_positions[:,:,[0,1]] # XY plane
         self.edges_artist_collectionIndex_to_edgeIdAndData_map = numpy.array([(u_,v_,a) for (u_,v_,a) in self.graph.edges(data=True)])
         self.edges_artist_monocrome: matplotlib.collections.LineCollection = self.getEdgesArtistMonocrome()
         self.edges_artist_monocrome.set_visible(True)
@@ -96,13 +114,20 @@ class BasicCenterlineGraphInteractiveDrawer():
         # Edges colormap legend: radius of the connected node
         self.colorbar_edges_colormapped_radius: matplotlib.axes.Axes = self.getEdgesRadiusColorbar()
         self.colorbar_edges_colormapped_radius.set_visible(False)
+        ##############
+        # highlighting
+        ##############
+        # Node highlighting
+        self.node_highlighted_artist: matplotlib.collections.CircleCollection = self.getNodeHighlightedArtist()
+        self.node_highlighted_artist.set_visible(False)
+        self.ax.add_collection(self.node_highlighted_artist)
         ############
-        # text Boxes
+        # Text Boxes
         ############
         # Info textbox
-        self.textbox_artist_info: matplotlib.text.Annotation = self.getInfoTextboxArtist()
-        self.ax.add_artist(self.textbox_artist_info)
-        self.textbox_artist_info.set_visible(False)
+        self.textbox_info_artist: matplotlib.text.Annotation = self.getInfoTextboxArtist()
+        self.ax.add_artist(self.textbox_info_artist)
+        self.textbox_info_artist.set_visible(False)
         # Menu textbox
         self.textbox_artist_menu: matplotlib.offsetbox.AnchoredText = self.getMainMenuTextboxArtist()
         self.ax.add_artist(self.textbox_artist_menu)
@@ -142,25 +167,33 @@ class BasicCenterlineGraphInteractiveDrawer():
             self.edges_artist_colormapped_radius
         ]
         self.fig.canvas.mpl_connect("key_press_event", self.on_key_press_event_viewplane_carousel)
-        
+        # Node highlighting and info textbox
+        # Mouse click event on a node will highlight it and show its info in the textbox
+        self.node_highlighted_id = None
+        self.fig.canvas.mpl_connect("button_press_event", self.on_left_mouse_button_press_event_node_highlighting)
+        # Scroll event
+        # Mouse scroll event will move the node highlighting up and down
+        # the arterial tree
+        self.fig.canvas.mpl_connect("scroll_event", self.on_mouse_scroll_event_node_highlighting)
+
 
     
-    def getNodesPositionsList(self) -> list[numpy.ndarray]:
-        """Returns a list of numpy.ndarray of shape (3,) with the nodes positions.
+    def getNodesPositions(self) -> numpy.ndarray:
+        """Returns a numpy.ndarray of shape (N,3) with the n-th node's coordinates on each row.
         """
-        nodes_positions = []
-        for n in self.graph.nodes:
-            nodes_positions.append(
-                numpy.array([self.graph.nodes[n]["x"], self.graph.nodes[n]["y"], self.graph.nodes[n]["z"]])
-            )
+        # Memorty allocation
+        nodes_positions = numpy.zeros((self.graph.number_of_nodes(), 3), dtype="float")
+        # Fill the array
+        for i, n in enumerate(self.graph.nodes):
+            nodes_positions[i,:] = self.graph.nodes[n]["x"], self.graph.nodes[n]["y"], self.graph.nodes[n]["z"]
         return nodes_positions
     
-    def getNodesRadiiList(self) -> list[float]:
-        """Returns a list of nodes radii.
+    def getNodesRadii(self) -> numpy.ndarray:
+        """Returns a numpy.ndarray of shape (n_nodes, ) of nodes radii.
         """
-        nodes_radii = []
-        for n in self.graph.nodes:
-            nodes_radii.append(self.graph.nodes[n]["r"])
+        nodes_radii = numpy.zeros((self.graph.number_of_nodes(),), dtype="float")
+        for i, n in enumerate(self.graph.nodes):
+            nodes_radii[i] = self.graph.nodes[n]["r"]
         return nodes_radii
     
     def getNodesArtist(self) -> matplotlib.collections.CircleCollection:
@@ -201,7 +234,7 @@ class BasicCenterlineGraphInteractiveDrawer():
         nodes_collection_mpl = CircleCollection(
             sizes=circle_sizes,
             offsets=self.nodes_positions[:,[0,1]],
-            offset_transform=ax.transData,
+            offset_transform=self.ax.transData,
             edgecolors=c_out,
             facecolors=c_in,
             linewidths=lw,
@@ -212,57 +245,19 @@ class BasicCenterlineGraphInteractiveDrawer():
         )
         return nodes_collection_mpl
     
-    def getEdgesPositionsList(self) -> list[numpy.ndarray]:
-        """Returns a list of length n_edges of numpy arrays, one per each edge segment.
+    def getEdgesPositions(self) -> numpy.ndarray:
+        """Returns a numpy.ndarray of (n_edges, 2, 3) with the n-th edge's coordinates on each row.
+        The length is n_edges, one per each edge segment.
         The edge segment is defined as a numpy array of shape (2,3),
         where the first row is the source node positions [x, y, z],
         and the second row is the target node position."""
-        segs = []
-        for (u_,v_) in self.graph.edges(data=False):
-            nu_ = self.graph.nodes[u_]
-            nv_ = self.graph.nodes[v_]
-            seg_ = numpy.array(
-                [[nu_["x"], nu_["y"], nu_["z"]],
-                 [nv_["x"], nv_["y"], nv_["z"]]]
-            )
-            segs.append(seg_)
-        return segs
-
-    def getEdgesSegmentsProjectedOnPlane(self, projection_plane: str | None = "XY") -> list[numpy.ndarray]:
-        """Returns a list of length n_edges of numpy arrays, one per each edge segment.
-
-        The edge segment is defined as a numpy array of shape (2,2),
-        where the first row is the source node position on the projection plane,
-        and the second row is the target node position.
-        The numpy array colums are [x, y] or [x, z] or [y, z] depending on the projection plane.
-
-        Parameters
-        ----------
-        projection_plane : str, optional
-            The projection plane, by default "XY"
-            Valid values are ["XY", "XZ", "YZ"]
-
-        Returns
-        -------
-        list[numpy.ndarray]
-            List of numpy arrays of shape (2,2), one per edge in the graph, with the edge segments projected on the projection plane.
-        """
-        # projection_plane preprocessing
-        if projection_plane is None:
-            projection_plane = "XY"
-        if not projection_plane in ["XY", "XZ", "YZ"]:
-            raise ValueError(f"Unsupported projection plane: {projection_plane}")
-        if projection_plane == "XY":
-            slice = [0,1]
-        elif projection_plane == "XZ":
-            slice = [0,2]
-        elif projection_plane == "YZ":
-            slice = [1,2]
-        # get segments ready to be given to the matplotlib.collections.LineCollection artist constructor
-        segs = []
-        for e in self.edges_positions:
-            segs.append(e[:,slice])
-        return segs
+        # Memorty allocation
+        edges_positions = numpy.zeros((self.graph.number_of_edges(), 2, 3), dtype="float")
+        # Fill the array
+        for i, (u_,v_) in enumerate(self.graph.edges(data=False)):
+            edges_positions[i,0,:] = self.graph.nodes[u_]["x"], self.graph.nodes[u_]["y"], self.graph.nodes[u_]["z"]
+            edges_positions[i,1,:] = self.graph.nodes[v_]["x"], self.graph.nodes[v_]["y"], self.graph.nodes[v_]["z"]
+        return edges_positions
 
     def getEdgesArtistMonocrome(self) -> matplotlib.collections.LineCollection:
         """Returns a matplotlib.collections.LineCollection object with the edges drawn as mono-chromatic lines."""
@@ -439,6 +434,22 @@ class BasicCenterlineGraphInteractiveDrawer():
         )
         return legend_artist
 
+    def getNodeHighlightedArtist(self) -> matplotlib.collections.CircleCollection:
+        """Returns a matplotlib.collections.CircleCollection object with the highlighting effect artist.
+        """
+        offset_zero_ = numpy.mean(self.nodes_positions[:,[0,1]], axis=0).reshape((1,2))
+        node_highlighted_artist = matplotlib.collections.CircleCollection(
+            sizes=[55],
+            offsets=offset_zero_,
+            offset_transform=self.ax.transData,
+            facecolors=COLOR_HIGHLIGHT_NODE,
+            alpha=ALPHA_HIGHLIGHT_NODE,
+            linewidths=INFO_BBOX_EDGE_WIDTH,
+            edgecolor=COLOR_INFO_ARROW,
+            zorder=3.0
+        )
+        return node_highlighted_artist
+
     def getInfoTextboxArtist(self) -> matplotlib.text.Annotation:
         """Returns a matplotlib.text.Annotation object with the information text.
         The textbox is not visible by default.
@@ -477,9 +488,10 @@ class BasicCenterlineGraphInteractiveDrawer():
                 capstyle=INFO_ARROW_CAPSTYLE,
                 color=COLOR_INFO_ARROW,
                 patchB=None,
-                shrinkA=0, shrinkB=0
+                shrinkA=0.0, shrinkB=0.0,
+                zorder=3.0
             ),
-            zorder=3.0
+            zorder=3.000001
         )
         return node_hover_annotation
 
@@ -534,7 +546,7 @@ class BasicCenterlineGraphInteractiveDrawer():
 
     # Interactive effects
 
-    def on_key_press_event_viewstyle_carousel(self, event):
+    def on_key_press_event_viewstyle_carousel(self, event: matplotlib.backend_bases.KeyEvent):
         if event.key == "n":
             # Set all elements' and legends artists to invisible
             for artist_list, legend in zip(self.viewstyle_carousel_artists_cycler, self.viewstyle_carousel_legends_cycler):
@@ -549,13 +561,14 @@ class BasicCenterlineGraphInteractiveDrawer():
             # Draw changes
             self.fig.canvas.draw_idle()
     
-    def on_key_press_event_viewplane_carousel(self, event):
+    def on_key_press_event_viewplane_carousel(self, event: matplotlib.backend_bases.KeyEvent):
         if event.key == "p":
             # Data
             self.viewplane_carousel_current_index = (self.viewplane_carousel_current_index + 1) % len(self.viewplane_carousel_planes_list)
+            current_slice = self.viewplane_carousel_planes_list_slices[self.viewplane_carousel_current_index]
             for node_artist in self.viewplane_carousel_nodes_artists_list:
-                node_artist.set_offsets(self.nodes_positions[:,self.viewplane_carousel_planes_list_slices[self.viewplane_carousel_current_index]])
-            self.__current_projection_edges_positions = self.getEdgesSegmentsProjectedOnPlane(self.viewplane_carousel_planes_list[self.viewplane_carousel_current_index])
+                node_artist.set_offsets(self.nodes_positions[:,current_slice])
+            self.__current_projection_edges_positions = self.edges_positions[:,:,current_slice]
             for edge_artist in self.viewplane_carousel_edges_artists_list:
                 edge_artist.set_segments(self.__current_projection_edges_positions)
             # Axis labels
@@ -574,50 +587,158 @@ class BasicCenterlineGraphInteractiveDrawer():
                 numpy.min(self.nodes_positions[:,self.viewplane_carousel_planes_list_slices[self.viewplane_carousel_current_index][1]])-10,
                 numpy.max(self.nodes_positions[:,self.viewplane_carousel_planes_list_slices[self.viewplane_carousel_current_index][1]])+10
             )
+            # Change highlight position accordingly
+            if self.node_highlighted_id is not None:
+                node_pos_ = numpy.array(
+                    [self.graph.nodes[self.node_highlighted_id]['x'],self.graph.nodes[self.node_highlighted_id]['y'],self.graph.nodes[self.node_highlighted_id]['z']] 
+                )[current_slice]
+                self.node_highlighted_artist.set_offsets(node_pos_.reshape((1,2)))
+                self.textbox_info_artist.xy = node_pos_
             # Draw changes
             self.fig.canvas.draw_idle()
 
-    #######################
-    #######################
-    # NODE INFO DISPLAYER AND EDGE INFO DISPLAYER
-    #######################
-    #######################
+    def __get_node_info_textbox_text(self, node_id):
+        node = self.graph.nodes[node_id]
+        annotation_text  = f"Node \"{node_id}\"\n"
+        annotation_text += f"x: {node['x']: 7.3f} mm\ny: {node['y']: 7.3f} mm\nz: {node['z']: 7.3f} mm\n"
+        annotation_text += f"r: {node['r']: 7.3f} mm\nt: {node['t']: 7.3f} s\n"
+        if node['arterial_tree'].value == ArteryPointTree.RIGHT.value:
+            annotation_text += f"Right arterial tree\n"
+        elif node['arterial_tree'].value == ArteryPointTree.LEFT.value:
+            annotation_text += f"Left arterial tree\n"
+        elif node['arterial_tree'].value == ArteryPointTree.RL.value:
+            annotation_text += f"Both arterial trees\n"
+        if node['topology_class'].value == ArteryPointTopologyClass.OSTIUM.value:
+            annotation_text += f"Coronary ostium\n"
+        elif node['topology_class'].value == ArteryPointTopologyClass.SEGMENT.value:
+            annotation_text += f"Arterial segment\n"
+        elif node['topology_class'].value == ArteryPointTopologyClass.INTERSECTION.value:
+            annotation_text += f"Arterial branching\n"
+        elif node['topology_class'].value == ArteryPointTopologyClass.ENDPOINT.value:
+            annotation_text += f"Branch endpoint\n"
+        # - distance from ostium/ostia
+        ostia = BasicCenterlineGraph.getCoronaryOstiumNodeIdRelativeToNode(graph=self.graph, node_id=node_id)
+        if len(ostia) == 1:
+            distance = networkx.shortest_path_length(self.graph, source=ostia[0], target=node_id, weight="euclidean_distance")
+            annotation_text += f"Distance from ostium:\n{distance: 8.3f} mm"
+        elif len(ostia) == 2:
+            # ostia[0] is alwais left, ostia[1] is alwais right
+            distance = networkx.shortest_path_length(self.graph, source=ostia[0], target=node_id, weight="euclidean_distance")
+            annotation_text += f"Distance from left ostium:\n{distance: 8.3f} mm"
+            distance = networkx.shortest_path_length(self.graph, source=ostia[1], target=node_id, weight="euclidean_distance")
+            annotation_text += f"Distance from right ostium:\n{distance: 8.3f} mm"
+        return annotation_text
 
+    def __update_highlight_and_info_textbox_artists(self, textbox_text):
+        """This utility function is to be called after the property self.node_highlighted_id is updated.
+        This sfunction changes the position of the highlight artist and the textbox artist accordingly.
+        Drawing (draw_idle()) is left for the caller.
+        """
+        if textbox_text is None:
+            textbox_text = self.__get_node_info_textbox_text(self.node_highlighted_id)
+        # Get slice indexes of current axes vies (XY, XZ or YZ)
+        current_slice = self.viewplane_carousel_planes_list_slices[self.viewplane_carousel_current_index]
+        # Get node coords
+        node_coords = numpy.zeros((1,3), dtype="float")
+        node_coords[0,:] = self.graph.nodes[self.node_highlighted_id]["x"], self.graph.nodes[self.node_highlighted_id]["y"], self.graph.nodes[self.node_highlighted_id]["z"]
+        node_coords = node_coords[0,current_slice]
+        # Set highlight artist props
+        self.node_highlighted_artist.set_offsets(node_coords)
+        self.node_highlighted_artist.set_visible(True)
+        # Set textbox props
+        self.textbox_info_artist.xy = (node_coords[0], node_coords[1])
+        self.textbox_info_artist.set_text(textbox_text)
+        self.textbox_info_artist.arrow_patch.set(
+            patchB=self.node_highlighted_artist
+        )
+        self.textbox_info_artist.shrinkB=0.0
+        self.textbox_info_artist.set_visible(True)
 
+    def on_left_mouse_button_press_event_node_highlighting(self, event: matplotlib.backend_bases.MouseEvent):
+        """Node highlighting and textbox display on a double left mouse click.
+        """
+        # If not double-click, do not consider it
+        if not event.dblclick:
+            return
+        # If it is not a left double-click and the click is not on the axes,
+        # just set the artists to not visible.
+        if event.button != matplotlib.backend_bases.MouseButton.LEFT or event.inaxes != self.ax:
+            self.node_highlighted_id = None
+            self.textbox_info_artist.set_visible(False)
+            self.node_highlighted_artist.set_visible(False)
+            event.canvas.draw_idle()
+            return
+        # If it is a left click, check if the click is on a node
+        # and highlight it and display its info in the textbox.
+        # If the click is not on a node, just set the artists to not visible.
+        cont, ind = self.nodes_artist.contains(event)
+        if not cont:
+            self.node_highlighted_id = None
+            self.textbox_info_artist.set_visible(False)
+            self.node_highlighted_artist.set_visible(False)
+            event.canvas.draw_idle()
+            return
+        # When defining and drawing studff, first set the position and data of the highlighing patch,
+        # then the propoerties of the textbox, then the patchB property of the annotation,
+        # and finally the visibility of the artists.
+        # Get highlighed node position
+        self.node_highlighted_id = self.nodes_artist_collectionIndex_to_nodeId_map[ind["ind"][-1]]
+        if len(ind["ind"]) != 1:
+            # If multiple nodes are selected, ask to zoom in and select just one node.
+            text_ = f"{len(ind['ind'])} nodes selected.\nPlease zoom in and select just one node."
+        else:
+            # If the click is on a node and just one node is selected, display its info in the textbox.
+            text_ = self.__get_node_info_textbox_text(self.node_highlighted_id)
+        self.__update_highlight_and_info_textbox_artists(text_)
+        event.canvas.draw_idle()
+        return
 
-
-
-
-if __name__ == "__main__":
-    f_prova = "C:\\Users\\lecca\\Desktop\\AAMIASoftwares-research\\Data\\CAT08\\CenterlineGraphs_FromReference\\dataset00.GML"
-    from ..graph import loadGraph
-    g_ = loadGraph(f_prova)
-    fig, ax = plt.subplots(
-        num="Centerlines Graph 2D Viewer | HCATNetwork",
-        dpi=FIGURE_DPI
-    )
-    c = BasicCenterlineGraphInteractiveDrawer(fig, ax, g_)
-    ax.autoscale_view()
-    # out
-    plt.tight_layout()
-    plt.show()
-    quit()
-
+    def on_mouse_scroll_event_node_highlighting(self, event: matplotlib.backend_bases.MouseEvent):
+        """When the mouse scrolls, if a node is highlighted, change node with the one up or down the tree
+        and update the textbox and highlight.
+        """
+        if self.node_highlighted_id is None:
+            return
+        # Get the node's neighbors
+        neighbors_plus_self = list(self.graph.neighbors(self.node_highlighted_id)) + [self.node_highlighted_id]
+        # Get each neighbour's distance from ostium
+        neighbors_distances = [self.nodes_distance_from_ostia[n] for n in neighbors_plus_self]
+        if event.button == "up":
+            # Get the neighbor with the minimum distance from ostium
+            new_node_id = neighbors_plus_self[numpy.argmin(neighbors_distances)]
+        elif event.button == "down":
+            # Get the neighbor with the maximum distance from ostium
+            new_node_id = neighbors_plus_self[numpy.argmax(neighbors_distances)]
+        else:
+            return
+        # Update the highlight position
+        old_node_id = self.node_highlighted_id
+        self.node_highlighted_id = new_node_id
+        if self.node_highlighted_id != old_node_id:
+            # Update
+            self.__update_highlight_and_info_textbox_artists(None)
+            # Draw changes
+            event.canvas.draw_idle()
         
         
-
-
 def drawCenterlinesGraph2D(graph: networkx.Graph):
-    """Assumes this kind on dictionaries:
-        nodes: HCATNetwork.node.SimpleCenterlineNode
-        edges: HCATNetwork.edge.BasicEdge
-        graph: HCATNetwork.graph.BasicCenterlineGraph
+    """Draws the Coronary Artery tree centerlines in an interactive way.
+    
+    Parameters
+    ----------
+    graph : networkx.Graph
+        The graph to draw. Assumes this kind of dictionaries:
+            nodes: HCATNetwork.node.SimpleCenterlineNode
+            edges: HCATNetwork.edge.BasicEdge
+            graph: HCATNetwork.graph.BasicCenterlineGraph
     """
+    # Figure
     fig, ax = plt.subplots(
         num="Centerlines Graph 2D Viewer | HCATNetwork",
         dpi=FIGURE_DPI
     )
     fig.set_facecolor(FIGURE_FACECOLOR)
+    # Axes
     ax.set_facecolor(AXES_FACECOLOR)
     ax.set_aspect(
         aspect=AXES_ASPECT_TYPE,
@@ -636,251 +757,17 @@ def drawCenterlinesGraph2D(graph: networkx.Graph):
     ax.set_ylabel("mm")
     ax.set_axisbelow(True)
     ax.set_title(graph.graph["image_id"])
-    ########
-    # NODES
-    ########
-    patch_n_color_map = {
-        ArteryPointTree.RIGHT.value: COLOR_NODE_FACE_RCA,
-        ArteryPointTree.LEFT.value: COLOR_NODE_FACE_LCA,
-        ArteryPointTree.RL.value: COLOR_NODE_FACE_BOTH
-    }
-    edge_n_color_map = {
-        ArteryPointTopologyClass.OSTIUM.value: COLOR_NODE_EDGE_START,
-        ArteryPointTopologyClass.SEGMENT.value: COLOR_NODE_EDGE_DEFAULT,
-        ArteryPointTopologyClass.ENDPOINT.value: COLOR_NODE_EDGE_END,
-        ArteryPointTopologyClass.INTERSECTION.value: COLOR_NODE_EDGE_CROSS
-    }
-    edgewidth_n_map = {
-        ArteryPointTopologyClass.OSTIUM.value: 2.2,
-        ArteryPointTopologyClass.SEGMENT.value: 0.0,
-        ArteryPointTopologyClass.ENDPOINT.value: 1,
-        ArteryPointTopologyClass.INTERSECTION.value: 1.8
-    }
-    c_in = []
-    c_out = []
-    s_out = []
-    positions = []
-    radii = []
-    circle_collection_index_to_node_id_map = {}
-    for in_, n in enumerate(graph.nodes):
-        n_ = SimpleCenterlineNode(**(graph.nodes[n]))
-        positions.append(tuple(n_.getVertexList()[:2]))
-        radii.append(n_["r"])
-        c_in.append(patch_n_color_map[n_["arterial_tree"].value])
-        c_out.append(edge_n_color_map[n_["topology_class"].value])
-        s_out.append(edgewidth_n_map[n_["topology_class"].value])
-        circle_collection_index_to_node_id_map.update({in_: n})
-    # - plot
-    circle_sizes = (numpy.pi/10*(numpy.array(radii)*MILLIMETERS_TO_INCHES*FIGURE_DPI)**2)
-    circle_sizes = (circle_sizes - numpy.min(circle_sizes))/(numpy.max(circle_sizes) - numpy.min(circle_sizes))*40 + 10
-    nodes_collection_mpl = CircleCollection(
-        sizes=circle_sizes,
-        offsets=positions,
-        offset_transform=ax.transData,
-        edgecolors=c_out,
-        facecolors=c_in,
-        linewidths=s_out,
-        antialiaseds=True,
-        zorder=2,
-        picker=True,
-        pickradius=1
-    )
-    ax.add_collection(nodes_collection_mpl)
-    class NodeHoverEffects():
-        def __init__(self):
-            # Highlighted nodes
-            self.node_hover_highlight_circle_obj = None
-            # Textbox pointer with node information
-            self.node_hover_annotation = None
-        def node_hover(self, motion_notify_event: MouseEvent):
-            redraw = False
-            if self.node_hover_highlight_circle_obj is not None:
-                self.node_hover_highlight_circle_obj.remove()
-                self.node_hover_highlight_circle_obj = None
-                redraw = True
-            if self.node_hover_annotation is not None:
-                self.node_hover_annotation.remove()
-                self.node_hover_annotation = None
-                redraw = True
-            if motion_notify_event.inaxes == ax:
-                cont, ind = nodes_collection_mpl.contains(motion_notify_event)
-                if cont:
-                    redraw = True
-                    # HIGLIGHT NODE
-                    cont_idx = ind["ind"][-1]
-                    ax_lims_ = motion_notify_event.inaxes.get_xlim()
-                    node_hover_circle_mpl = CirclePolygon(
-                        xy=positions[cont_idx],
-                        radius=1.05*(ax_lims_[1] - ax_lims_[0])/100,
-                        resolution=16,
-                        color=COLOR_HIGHLIGHT_NODE,
-                        linewidth=0,
-                        zorder=2.1,
-                        alpha=ALPHA_HIGHLIGHT_NODE
-                    )
-                    self.node_hover_highlight_circle_obj = motion_notify_event.inaxes.add_patch(node_hover_circle_mpl)
-                    # NODE ANNOTATION
-                    if ind["ind"].shape[0] > 1:
-                        annotation_text = f"{ind['ind'].shape[0]} nodes\nZoom in and select\none node at a time"
-                    else:
-                        # get node information
-                        # build info text
-                        node_id = circle_collection_index_to_node_id_map[cont_idx]
-                        node = SimpleCenterlineNode(**(graph.nodes[node_id]))
-                        annotation_text  = f"Node \"{node_id}\"\n"
-                        annotation_text += f"x: {node['x']: 7.3f} mm\ny: {node['y']: 7.3f} mm\nz: {node['z']: 7.3f} mm\n"
-                        annotation_text += f"r: {node['r']: 7.3f} mm\nt: {node['t']: 7.3f} s\n"
-                        if node['arterial_tree'].value == ArteryPointTree.RIGHT.value:
-                            annotation_text += f"Right arterial tree\n"
-                        elif node['arterial_tree'].value == ArteryPointTree.LEFT.value:
-                            annotation_text += f"Left arterial tree\n"
-                        elif node['arterial_tree'].value == ArteryPointTree.RL.value:
-                            annotation_text += f"Both arterial trees\n"
-                        if node['topology_class'].value == ArteryPointTopologyClass.OSTIUM.value:
-                            annotation_text += f"Coronary ostium\n"
-                        elif node['topology_class'].value == ArteryPointTopologyClass.SEGMENT.value:
-                            annotation_text += f"Arterial segment\n"
-                        elif node['topology_class'].value == ArteryPointTopologyClass.INTERSECTION.value:
-                            annotation_text += f"Arterial branching\n"
-                        elif node['topology_class'].value == ArteryPointTopologyClass.ENDPOINT.value:
-                            annotation_text += f"Branch endpoint\n"
-                        # - distance from ostium/ostia
-                        ostia = BasicCenterlineGraph.getCoronaryOstiumNodeIdRelativeToNode(graph=graph, node_id=node_id)
-                        if len(ostia) == 1:
-                            distance = networkx.shortest_path_length(graph, source=ostia[0], target=node_id, weight="euclidean_distance")
-                            annotation_text += f"Distance from ostium:\n{distance: 8.3f} mm"
-                        elif len(ostia) == 2:
-                            # ostia[0] is alwais left, ostia[1] is alwais right
-                            distance = networkx.shortest_path_length(graph, source=ostia[0], target=node_id, weight="euclidean_distance")
-                            annotation_text += f"Distance from left ostium:\n{distance: 8.3f} mm"
-                            distance = networkx.shortest_path_length(graph, source=ostia[1], target=node_id, weight="euclidean_distance")
-                            annotation_text += f"Distance from right ostium:\n{distance: 8.3f} mm"
-                    self.node_hover_annotation = motion_notify_event.inaxes.annotate(
-                        # annotation position
-                        xy=positions[cont_idx], xycoords='data',
-                        # text
-                        # https://matplotlib.org/stable/api/text_api.html#matplotlib.text.Text
-                        text=annotation_text,
-                        xytext=(10, 10), textcoords='axes points',
-                        color=COLOR_INFO_TEXT,
-                        fontfamily=['monospace'], fontsize=8.5, fontweight='light',
-                        horizontalalignment='left', verticalalignment='bottom',
-                        # bbox
-                        # https://matplotlib.org/stable/api/_as_gen/matplotlib.patches.FancyBboxPatch.html#matplotlib.patches.FancyBboxPatch
-                        bbox=dict(
-                            boxstyle='round',
-                            facecolor=COLOR_INFO_BOX_FACE,
-                            edgecolor=COLOR_INFO_BOX_EDGE,
-                            linewidth=0.75
-                        ),
-                        # arrow and end patch
-                        arrowprops=dict(
-                            # https://matplotlib.org/stable/api/_as_gen/matplotlib.patches.FancyArrowPatch.html#matplotlib.patches.FancyArrowPatch
-                            arrowstyle="-",
-                            color=COLOR_INFO_ARROW,
-                            patchB=node_hover_circle_mpl,
-                            shrinkA=0, shrinkB=0
-                        ),
-                        zorder=2.2
-                    )
-            if redraw:
-                motion_notify_event.canvas.draw_idle()
-    node_hover_class = NodeHoverEffects()
-    fig.canvas.mpl_connect("motion_notify_event", node_hover_class.node_hover)
-    # Keep for later reference
-    # def node_on_pick(artist, mouse_event):
-    #    print(mouse_event.ind)
-
-    ########
-    # EDGES
-    ########
-    segs = []
-    line_edge_map = []
-    edge_distance_color_map = []
-    for i, (u_,v_,a) in enumerate(graph.edges(data=True)):
-        uu = SimpleCenterlineNode(**(graph.nodes[u_])).getVertexList()
-        vv = SimpleCenterlineNode(**(graph.nodes[v_])).getVertexList()
-        segs.append(numpy.array([uu[:2],vv[:2]]))
-        line_edge_map.append((u_,v_, a)) # a is the edge attribute dictionary
-    # Get each line's first node distance from respective ostium
-    temp_node_dist_map_ = {}
-    ostia = BasicCenterlineGraph.getCoronaryOstiaNodeId(graph=graph)
-    for ostium in ostia:
-        temp_node_dist_map_.update({ostium: 0.0})
-        d_ = networkx.single_source_dijkstra_path_length(graph, source=ostium, weight="euclidean_distance")
-        try:
-            d_.pop(ostium)
-        except KeyError:
-            pass
-        temp_node_dist_map_.update(d_)
-    for (u_,v_) in graph.edges(data=False):
-        edge_distance_color_map.append(temp_node_dist_map_[u_])
-    edge_distance_color_map = numpy.array(edge_distance_color_map)
-    # make segments collection to plot
-    line_segments = LineCollection(
-        segs,
-        zorder=1,
-        linewidth=0.8,
-        color=COLOR_EDGE_DEFAULT
-    )
-    line_segments_color = LineCollection(
-        segs,
-        zorder=1,
-        linewidth=1.3, 
-        colors=EDGE_COLORMAP_DISTANCE(
-                edge_distance_color_map,
-                vmin=numpy.min(edge_distance_color_map),
-                vmax=numpy.max(edge_distance_color_map)
-               ),
-        visible=False
-    )
-    ax.add_collection(line_segments)
-    ax.add_collection(line_segments_color)
-    class EdgeEffects():
-        def __init__(self, node_collection, edges_collection_monocrome, edges_collection_color):
-            self.nodes_collection = node_collection
-            self.edges_collection_m = edges_collection_monocrome
-            self.edges_collection_c = edges_collection_color
-        def toggle_edges(self, event):
-            """On a key pressed event, if the pressed key is 'n', then toggle the nodes visibility in the image.
-               Only the edges are left, which will assume a different color profile depending on distance from the coronary ostium.
-            """
-            if event.key == "n":
-                if self.nodes_collection.get_visible():
-                    self.nodes_collection.set_visible(False)
-                    self.edges_collection_m.set_visible(False)
-                    self.edges_collection_c.set_visible(True)
-                else:
-                    self.nodes_collection.set_visible(True)
-                    self.edges_collection_m.set_visible(True)
-                    self.edges_collection_c.set_visible(False)
-                event.canvas.draw_idle()
-    edge_effect = EdgeEffects(nodes_collection_mpl,line_segments,line_segments_color)
-    fig.canvas.mpl_connect('key_press_event', edge_effect.toggle_edges)
-    ########
-    # legend
-    ########
-    legend_elements = [
-        Line2D([0], [0], marker='o', markerfacecolor=COLOR_NODE_FACE_RCA, color="w",                 markersize=10, lw=0),
-        Line2D([0], [0], marker='o', markerfacecolor=COLOR_NODE_FACE_LCA, color="w",                 markersize=10, lw=0),
-        Line2D([0], [0], marker='o', markerfacecolor="w",          color=COLOR_NODE_EDGE_START,    markersize=10, lw=0),
-        Line2D([0], [0], marker='o', markerfacecolor="w",          color=COLOR_NODE_EDGE_CROSS, markersize=10, lw=0),
-        Line2D([0], [0], marker='o', markerfacecolor="w",          color=COLOR_NODE_EDGE_END,  markersize=10, lw=0)
-    ]
-    ax.legend(
-        legend_elements,
-        ["RCA",
-         "LCA",
-         "OSTIA",
-         "INTERSECTIONS",
-         "ENDPOINTS"],
-         loc="upper right"
-    )
-    # axis rescale to fit data
+    # Content
+    c = BasicCenterlineGraphInteractiveDrawer(fig, ax, graph)
+    # Rescale axes view to content
     ax.autoscale_view()
-    # out
+    # Plot
     plt.tight_layout()
     plt.show()
+
+
+
+
 
 def drawCenterlinesGraph3D(graph):
     """Assumes this kind on dictionaries:
@@ -972,6 +859,7 @@ def drawCenterlinesGraph3D(graph):
     # out
     plt.tight_layout()
     plt.show()
+
 
 if __name__ == "__main__":
     f_prova = "C:\\Users\\lecca\\Desktop\\AAMIASoftwares-research\\Data\\CAT08\\CenterlineGraphs_FromReference\\dataset00.GML"

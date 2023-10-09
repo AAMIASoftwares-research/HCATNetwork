@@ -54,14 +54,14 @@ COLOR_EDGE_DEFAULT = "#22403d"
 EDGE_LINEWIDTH = 0.7
 
 EDGE_COLORMAP_DISTANCE = matplotlib.colormaps["turbo_r"]
-EDGE_COLORMAP_RADIUS = matplotlib.colormaps["copper_r"]
+EDGE_COLORMAP_RADIUS = matplotlib.colormaps["copper_r"]    ###### MAKE CUSTOM COLORMAPS, AND RENAME ALL CONSTANTS
 
 ##########################
 # INTERACTIVE HIGHLIGHTING
 ##########################
 
 COLOR_HIGHLIGHT_NODE = "#faed00"
-ALPHA_HIGHLIGHT_NODE = 0.6
+ALPHA_HIGHLIGHT_NODE = 0.7
 
 ####################
 # ARROWS/POINTERS
