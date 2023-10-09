@@ -204,15 +204,15 @@ class BasicCenterlineGraphInteractiveDrawer():
         By default, nodes are viewed projected to the XY plane.
         """
         nodes_facecolor_map_dict = {
-            ArteryPointTree.RIGHT.value: COLOR_NODE_FACE_RCA,
-            ArteryPointTree.LEFT.value: COLOR_NODE_FACE_LCA,
-            ArteryPointTree.RL.value: COLOR_NODE_FACE_BOTH
+            ArteryPointTree.RIGHT.value: NODE_FACECOLOR_RCA,
+            ArteryPointTree.LEFT.value: NODE_FACECOLOR_LCA,
+            ArteryPointTree.RL.value: NODE_FACECOLOR_LR
         }
         nodes_edgecolor_map_dict = {
-            ArteryPointTopologyClass.OSTIUM.value: COLOR_NODE_EDGE_START,
-            ArteryPointTopologyClass.SEGMENT.value: COLOR_NODE_EDGE_DEFAULT,
-            ArteryPointTopologyClass.ENDPOINT.value: COLOR_NODE_EDGE_END,
-            ArteryPointTopologyClass.INTERSECTION.value: COLOR_NODE_EDGE_CROSS
+            ArteryPointTopologyClass.OSTIUM.value: NODE_EDGEECOLOR_START,
+            ArteryPointTopologyClass.SEGMENT.value: NODE_EDGEECOLOR_DEFAULT,
+            ArteryPointTopologyClass.ENDPOINT.value: NODE_EDGEECOLOR_END,
+            ArteryPointTopologyClass.INTERSECTION.value: NODE_EDGEECOLOR_CROSS
         }
         nodes_edgewidth_map_dict = {
             ArteryPointTopologyClass.OSTIUM.value: 2.2,
@@ -265,7 +265,7 @@ class BasicCenterlineGraphInteractiveDrawer():
             self.__current_projection_edges_positions,
             zorder=1.0,
             linewidth=0.7,
-            color=COLOR_EDGE_DEFAULT
+            color=EDGE_FACECOLOR_DEFAULT
         )
         return line_collection
     
@@ -402,11 +402,11 @@ class BasicCenterlineGraphInteractiveDrawer():
 
     def getLegendArtist(self) -> matplotlib.legend.Legend:
         legend_elements = [
-            Line2D([0], [0], marker='o', markerfacecolor=COLOR_NODE_FACE_RCA, color=COLOR_INFO_BOX_FACE,   markersize=10, lw=0),
-            Line2D([0], [0], marker='o', markerfacecolor=COLOR_NODE_FACE_LCA, color=COLOR_INFO_BOX_FACE,   markersize=10, lw=0),
-            Line2D([0], [0], marker='o', markerfacecolor=COLOR_INFO_BOX_FACE, color=COLOR_NODE_EDGE_START, markersize=10, lw=0),
-            Line2D([0], [0], marker='o', markerfacecolor=COLOR_INFO_BOX_FACE, color=COLOR_NODE_EDGE_CROSS, markersize=10, lw=0),
-            Line2D([0], [0], marker='o', markerfacecolor=COLOR_INFO_BOX_FACE, color=COLOR_NODE_EDGE_END,   markersize=10, lw=0)
+            Line2D([0], [0], marker='o', markerfacecolor=NODE_FACECOLOR_RCA, color=INFO_BOX_FACECOLOR,   markersize=10, lw=0),
+            Line2D([0], [0], marker='o', markerfacecolor=NODE_FACECOLOR_LCA, color=INFO_BOX_FACECOLOR,   markersize=10, lw=0),
+            Line2D([0], [0], marker='o', markerfacecolor=INFO_BOX_FACECOLOR, color=NODE_EDGEECOLOR_START, markersize=10, lw=0),
+            Line2D([0], [0], marker='o', markerfacecolor=INFO_BOX_FACECOLOR, color=NODE_EDGEECOLOR_CROSS, markersize=10, lw=0),
+            Line2D([0], [0], marker='o', markerfacecolor=INFO_BOX_FACECOLOR, color=NODE_EDGEECOLOR_END,   markersize=10, lw=0)
         ]
 
         legend_artist = matplotlib.legend.Legend(
@@ -420,7 +420,7 @@ class BasicCenterlineGraphInteractiveDrawer():
                 "family": INFO_TEXT_FONTFAMILY,
                 "weight": INFO_TEXT_FONTWEIGHT
             },
-            labelcolor=COLOR_INFO_TEXT,
+            labelcolor=INFO_TEXT_COLOR,
             title="Node Colors Legend",
             title_fontproperties={
                 "size": 7.0,
@@ -428,8 +428,8 @@ class BasicCenterlineGraphInteractiveDrawer():
                 "weight": "bold"
             },
             framealpha=0.95,
-            facecolor=COLOR_INFO_BOX_FACE,
-            edgecolor=COLOR_INFO_BOX_EDGE,
+            facecolor=INFO_BOX_FACECOLOR,
+            edgecolor=INFO_BOX_EDGECOLOR,
             borderpad=0.5
         )
         return legend_artist
@@ -442,10 +442,10 @@ class BasicCenterlineGraphInteractiveDrawer():
             sizes=[55],
             offsets=offset_zero_,
             offset_transform=self.ax.transData,
-            facecolors=COLOR_HIGHLIGHT_NODE,
-            alpha=ALPHA_HIGHLIGHT_NODE,
+            facecolors=NODE_HIGHLIGHT_FACECOLOR,
+            alpha=NODE_HIGHLIGHT_ALPHA,
             linewidths=INFO_BBOX_EDGE_WIDTH,
-            edgecolor=COLOR_INFO_ARROW,
+            edgecolor=INFO_ARROW_FACECOLOR,
             zorder=3.0
         )
         return node_highlighted_artist
@@ -469,15 +469,15 @@ class BasicCenterlineGraphInteractiveDrawer():
             # https://matplotlib.org/stable/api/text_api.html#matplotlib.text.Text
             text="debug text",
             xytext=(7, 7), textcoords='axes points',
-            color=COLOR_INFO_TEXT,
+            color=INFO_TEXT_COLOR,
             fontfamily=INFO_TEXT_FONTFAMILY, fontsize=INFO_TEXT_FONTSIZE, fontweight=INFO_TEXT_FONTWEIGHT,
             horizontalalignment='left', verticalalignment='bottom',
             # bbox
             # https://matplotlib.org/stable/api/_as_gen/matplotlib.patches.FancyBboxPatch.html#matplotlib.patches.FancyBboxPatch
             bbox=dict(
                 boxstyle='round',
-                facecolor=COLOR_INFO_BOX_FACE,
-                edgecolor=COLOR_INFO_BOX_EDGE,
+                facecolor=INFO_BOX_FACECOLOR,
+                edgecolor=INFO_BOX_EDGECOLOR,
                 linewidth=INFO_BBOX_EDGE_WIDTH,
                 alpha=0.95
             ),
@@ -486,7 +486,7 @@ class BasicCenterlineGraphInteractiveDrawer():
                 # https://matplotlib.org/stable/api/_as_gen/matplotlib.patches.FancyArrowPatch.html#matplotlib.patches.FancyArrowPatch
                 arrowstyle=INFO_ARROW_LINESTYLE,
                 capstyle=INFO_ARROW_CAPSTYLE,
-                color=COLOR_INFO_ARROW,
+                color=INFO_ARROW_FACECOLOR,
                 patchB=None,
                 shrinkA=0.0, shrinkB=0.0,
                 zorder=3.0
@@ -528,7 +528,7 @@ class BasicCenterlineGraphInteractiveDrawer():
                 "family": INFO_TEXT_FONTFAMILY,
                 "size": INFO_TEXT_FONTSIZE*0.9,
                 "weight": INFO_TEXT_FONTWEIGHT,
-                "color": COLOR_INFO_TEXT
+                "color": INFO_TEXT_COLOR
             },
             zorder=5.0
         )
@@ -537,8 +537,8 @@ class BasicCenterlineGraphInteractiveDrawer():
         # matplotlib.offsetbox.AnchoredText.patch is a matplotlib.patches.FancyBboxPatch instance
         menu_textbox.patch.set(
             boxstyle="round",
-            facecolor=COLOR_INFO_BOX_FACE,
-            edgecolor=COLOR_INFO_BOX_EDGE,
+            facecolor=INFO_BOX_FACECOLOR,
+            edgecolor=INFO_BOX_EDGECOLOR,
             linewidth=INFO_BBOX_EDGE_WIDTH,
             alpha=0.95
         )
@@ -784,18 +784,18 @@ def drawCenterlinesGraph3D(graph):
     positions = []
     for n in graph.nodes:
         n_ = SimpleCenterlineNode(**(graph.nodes[n]))
-        c_in.append(COLOR_NODE_FACE_RCA if n_["arterial_tree"].value == ArteryPointTree.RIGHT.value else COLOR_NODE_FACE_LCA)
+        c_in.append(NODE_FACECOLOR_RCA if n_["arterial_tree"].value == ArteryPointTree.RIGHT.value else NODE_FACECOLOR_LCA)
         if n_["topology_class"].value == ArteryPointTopologyClass.OSTIUM.value:
-            c_out.append(COLOR_NODE_EDGE_START)
+            c_out.append(NODE_EDGEECOLOR_START)
             s_out.append(2.5)
         elif n_["topology_class"].value == ArteryPointTopologyClass.ENDPOINT.value:
-            c_out.append(COLOR_NODE_EDGE_END)
+            c_out.append(NODE_EDGEECOLOR_END)
             s_out.append(2.5)
         elif n_["topology_class"].value == ArteryPointTopologyClass.INTERSECTION.value:
-            c_out.append(COLOR_NODE_EDGE_CROSS)
+            c_out.append(NODE_EDGEECOLOR_CROSS)
             s_out.append(2)
         else:
-            c_out.append(COLOR_NODE_EDGE_DEFAULT)
+            c_out.append(NODE_EDGEECOLOR_DEFAULT)
             s_out.append(0.0)
         positions.append(n_.getVertexList())
     # - convert to numpy
@@ -804,8 +804,8 @@ def drawCenterlinesGraph3D(graph):
     s_out = numpy.array(s_out)
     positions = numpy.array(positions)
     # - plot
-    below_idx_ = [i for i in range(len(c_out)) if c_out[i] == COLOR_NODE_EDGE_DEFAULT]
-    above_idx_ = [i for i in range(len(c_out)) if c_out[i] != COLOR_NODE_EDGE_DEFAULT]
+    below_idx_ = [i for i in range(len(c_out)) if c_out[i] == NODE_EDGEECOLOR_DEFAULT]
+    above_idx_ = [i for i in range(len(c_out)) if c_out[i] != NODE_EDGEECOLOR_DEFAULT]
     ax.scatter( # - below
         positions[below_idx_,0],
         positions[below_idx_,1],
@@ -832,15 +832,15 @@ def drawCenterlinesGraph3D(graph):
         uu = SimpleCenterlineNode(**(graph.nodes[u_])).getVertexList()
         vv = SimpleCenterlineNode(**(graph.nodes[v_])).getVertexList()
         segs.append(numpy.array([uu[:3],vv[:3]]))
-    line_segments = Line3DCollection(segs, zorder=1, linewidth=0.4, color=COLOR_EDGE_DEFAULT)
+    line_segments = Line3DCollection(segs, zorder=1, linewidth=0.4, color=EDGE_FACECOLOR_DEFAULT)
     ax.add_collection(line_segments)
     # legend
     legend_elements = [
-        Line2D([0], [0], marker='o', markerfacecolor=COLOR_NODE_FACE_RCA, color="w",                 markersize=10, lw=0),
-        Line2D([0], [0], marker='o', markerfacecolor=COLOR_NODE_FACE_LCA, color="w",                 markersize=10, lw=0),
-        Line2D([0], [0], marker='o', markerfacecolor="w",          color=COLOR_NODE_EDGE_START,    markersize=10, lw=0),
-        Line2D([0], [0], marker='o', markerfacecolor="w",          color=COLOR_NODE_EDGE_CROSS, markersize=10, lw=0),
-        Line2D([0], [0], marker='o', markerfacecolor="w",          color=COLOR_NODE_EDGE_END,  markersize=10, lw=0)
+        Line2D([0], [0], marker='o', markerfacecolor=NODE_FACECOLOR_RCA, color="w",                 markersize=10, lw=0),
+        Line2D([0], [0], marker='o', markerfacecolor=NODE_FACECOLOR_LCA, color="w",                 markersize=10, lw=0),
+        Line2D([0], [0], marker='o', markerfacecolor="w",          color=NODE_EDGEECOLOR_START,    markersize=10, lw=0),
+        Line2D([0], [0], marker='o', markerfacecolor="w",          color=NODE_EDGEECOLOR_CROSS, markersize=10, lw=0),
+        Line2D([0], [0], marker='o', markerfacecolor="w",          color=NODE_EDGEECOLOR_END,  markersize=10, lw=0)
     ]
     ax.legend(
         legend_elements,

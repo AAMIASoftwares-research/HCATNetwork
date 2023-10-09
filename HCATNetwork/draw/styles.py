@@ -38,19 +38,19 @@ AXES_TEXT_FONTFAMILY = "monospace"
 ####################
 
 # Node colors - inside
-COLOR_NODE_FACE_DEFAULT = "grey"
-COLOR_NODE_FACE_RCA     = "firebrick"
-COLOR_NODE_FACE_LCA     = "navy"
-COLOR_NODE_FACE_BOTH    = "purple"
+NODE_FACECOLOR_DEFAULT = "grey"
+NODE_FACECOLOR_RCA     = "firebrick"
+NODE_FACECOLOR_LCA     = "navy"
+NODE_FACECOLOR_LR    = "purple"
 
 # Node colors - outside
-COLOR_NODE_EDGE_DEFAULT = "grey"
-COLOR_NODE_EDGE_START   = "#2ed111"
-COLOR_NODE_EDGE_CROSS   = "gold"
-COLOR_NODE_EDGE_END     = "red"
+NODE_EDGEECOLOR_DEFAULT = "grey"
+NODE_EDGEECOLOR_START   = "#2ed111"
+NODE_EDGEECOLOR_CROSS   = "gold"
+NODE_EDGEECOLOR_END     = "red"
 
 # Edge colors
-COLOR_EDGE_DEFAULT = "#22403d"
+EDGE_FACECOLOR_DEFAULT = "#22403d"
 EDGE_LINEWIDTH = 0.7
 
 EDGE_COLORMAP_DISTANCE = matplotlib.colormaps["turbo_r"]
@@ -60,14 +60,14 @@ EDGE_COLORMAP_RADIUS = matplotlib.colormaps["copper_r"]    ###### MAKE CUSTOM CO
 # INTERACTIVE HIGHLIGHTING
 ##########################
 
-COLOR_HIGHLIGHT_NODE = "#faed00"
-ALPHA_HIGHLIGHT_NODE = 0.7
+NODE_HIGHLIGHT_FACECOLOR = "#faed00"
+NODE_HIGHLIGHT_ALPHA = 0.7
 
 ####################
 # ARROWS/POINTERS
 ####################
 
-COLOR_INFO_ARROW = "#343a40"
+INFO_ARROW_FACECOLOR = "#343a40"
 INFO_ARROW_LINESTYLE = "-"
 INFO_ARROW_CAPSTYLE = "round"
 
@@ -75,12 +75,12 @@ INFO_ARROW_CAPSTYLE = "round"
 # TEXTBOXES
 ####################
 
-COLOR_INFO_TEXT = "#343a40"
+INFO_TEXT_COLOR = "#343a40"
 INFO_TEXT_FONTFAMILY = "monospace"
 INFO_TEXT_FONTWEIGHT = "light"
 INFO_TEXT_FONTSIZE = 8.0
 
-COLOR_INFO_BOX_FACE = "#ced4da"
-COLOR_INFO_BOX_EDGE = "#343a40"
+INFO_BOX_FACECOLOR = "#ced4da"
+INFO_BOX_EDGECOLOR = "#343a40"
 INFO_BBOX_EDGE_WIDTH = 0.75
 
