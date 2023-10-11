@@ -1,5 +1,7 @@
+cython
 numpy
 matplotlib
+PyQt6
 palettable
 NetworkX
 PyVis

@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name         = "HCATNetwork"
-version      = "2023.10.09-00"
+version      = "2023.10.11-00"
 description      = "A package which defines standardised dictionaries and functionalities to create and work with, visualize and interactively modify Heart coronary Artery Tree Graphs"
 readme = {file = "README.md", content-type = "text/markdown"}
 license = {file = "LICENSE"}
@@ -23,6 +23,7 @@ requires-python = ">=3.8"
 dependencies = [
     "numpy",
     "matplotlib",
+    "PyQt6",
     "palettable",
     "NetworkX",
     "PyVis"

@@ -11,17 +11,17 @@ https://matplotlib.org/stable/users/explain/figure/event_handling.html
 To run as a module, activate the venv, go inside the HCATNetwork parent directory,
 and use: python -m HCATNetwork.draw.draw
 """
-import matplotlib
-import matplotlib.pyplot as plt
-
-from matplotlib.lines import Line2D
-from matplotlib.patches import CirclePolygon
-from matplotlib.collections import LineCollection, EllipseCollection, CircleCollection
-from matplotlib.backend_bases import Event, MouseEvent
-from mpl_toolkits.mplot3d.art3d import Line3DCollection
-
 import networkx
 import numpy
+
+import matplotlib
+import matplotlib.pyplot as plt
+from matplotlib.animation import FuncAnimation as matplotlib_animation_FuncAnimation
+
+# the two following should have to be discarded
+from matplotlib.lines import Line2D
+from mpl_toolkits.mplot3d.art3d import Line3DCollection
+
 
 from ..graph import BasicCenterlineGraph
 from ..node import SimpleCenterlineNode, ArteryPointTopologyClass, ArteryPointTree
@@ -121,6 +121,10 @@ class BasicCenterlineGraphInteractiveDrawer():
         self.node_highlighted_artist: matplotlib.collections.CircleCollection = self.getNodeHighlightedArtist()
         self.node_highlighted_artist.set_visible(False)
         self.ax.add_collection(self.node_highlighted_artist)
+        # Node selection ripples
+        self.node_ripples_artist: matplotlib.collections.CircleCollection = self.__get_ripples_artist()
+        self.node_ripples_artist.set_visible(False)
+        self.ax.add_collection(self.node_ripples_artist)
         ############
         # Text Boxes
         ############
@@ -167,15 +171,23 @@ class BasicCenterlineGraphInteractiveDrawer():
             self.edges_artist_colormapped_radius
         ]
         self.fig.canvas.mpl_connect("key_press_event", self.on_key_press_event_viewplane_carousel)
+        # View the image in physical coordinates
+        # Key pressed event with key "r" will set the image axis to be the same as physical coordinates
+        # meaning that 1 cm on screen will be 1 cm on the axes
+        self.fig.canvas.mpl_connect("key_press_event", self.on_key_press_physical_coordinates)
         # Node highlighting and info textbox
         # Mouse click event on a node will highlight it and show its info in the textbox
+        # Also, when mpuse is clicked on a node, a ripple animation emanating from the node is shown
         self.node_highlighted_id = None
         self.fig.canvas.mpl_connect("button_press_event", self.on_left_mouse_button_press_event_node_highlighting)
         # Scroll event
         # Mouse scroll event will move the node highlighting up and down
         # the arterial tree
         self.fig.canvas.mpl_connect("scroll_event", self.on_mouse_scroll_event_node_highlighting)
-
+        # Node selection ripples
+        # Mouse click event on a node and scroll event will trigger a ripple animation emanating from the node
+        self.ripples_animation = None
+        self.ripples_animation_n_frames = 30
 
     
     def getNodesPositions(self) -> numpy.ndarray:
@@ -231,7 +243,7 @@ class BasicCenterlineGraphInteractiveDrawer():
         radii_as_dots = self.nodes_r*MILLIMETERS_TO_INCHES*FIGURE_DPI
         circle_sizes = numpy.pi*radii_as_dots**2
         circle_sizes = 10 + 40*(circle_sizes - numpy.min(circle_sizes))/(numpy.max(circle_sizes) - numpy.min(circle_sizes))
-        nodes_collection_mpl = CircleCollection(
+        nodes_artist = matplotlib.collections.CircleCollection(
             sizes=circle_sizes,
             offsets=self.nodes_positions[:,[0,1]],
             offset_transform=self.ax.transData,
@@ -243,7 +255,7 @@ class BasicCenterlineGraphInteractiveDrawer():
             picker=True,
             pickradius=1
         )
-        return nodes_collection_mpl
+        return nodes_artist
     
     def getEdgesPositions(self) -> numpy.ndarray:
         """Returns a numpy.ndarray of (n_edges, 2, 3) with the n-th edge's coordinates on each row.
@@ -437,7 +449,7 @@ class BasicCenterlineGraphInteractiveDrawer():
     def getNodeHighlightedArtist(self) -> matplotlib.collections.CircleCollection:
         """Returns a matplotlib.collections.CircleCollection object with the highlighting effect artist.
         """
-        offset_zero_ = numpy.mean(self.nodes_positions[:,[0,1]], axis=0).reshape((1,2))
+        offset_zero_ = self.nodes_positions[0,[0,1]]
         node_highlighted_artist = matplotlib.collections.CircleCollection(
             sizes=[55],
             offsets=offset_zero_,
@@ -497,8 +509,8 @@ class BasicCenterlineGraphInteractiveDrawer():
 
     def getMainMenuDisplayText(self) -> str:
         """Returns a string with the main menu display text."""
-        MAIN_MENU_KEY_OPTIONS = ["n", "p"]
-        MAIN_MENU_KEY_TEXT = ["toggle views.", "toggle projections."]
+        MAIN_MENU_KEY_OPTIONS = ["n", "p", "r"]
+        MAIN_MENU_KEY_TEXT = ["toggle views.", "toggle projections.", "View in physical coordinates."]
         # build the menu
         text = "MAIN MENU"
         for k, ktext in zip(MAIN_MENU_KEY_OPTIONS, MAIN_MENU_KEY_TEXT):
@@ -597,6 +609,31 @@ class BasicCenterlineGraphInteractiveDrawer():
             # Draw changes
             self.fig.canvas.draw_idle()
 
+    def on_key_press_physical_coordinates(self, event: matplotlib.backend_bases.KeyEvent):
+        """This function makes correspond one cm on screen with one cm in real life.
+        """
+        if event.key == "r":
+            dpi = self.fig.get_dpi()
+            if dpi != FIGURE_DPI:
+                self.fig.set_dpi(COMPUTER_MONITOR_DPI)
+                dpi = self.fig.get_dpi()
+            # Get axes limits in physical coordinates (mm on screen)
+            bbox = self.ax.get_window_extent()
+            axes_physical_width_mm = bbox.width * INCHES_TO_MILLIMETERS / dpi
+            axes_physical_height_mm = bbox.height * INCHES_TO_MILLIMETERS / dpi
+            # Get  center in data coordinates
+            x0, x1 = self.ax.get_xlim()
+            y0, y1 = self.ax.get_ylim()
+            x_center, y_center = (x0+x1)/2, (y0+y1)/2
+            # Get new axes limits in data coordinates
+            x0_new = x_center - axes_physical_width_mm/2
+            x1_new = x_center + axes_physical_width_mm/2
+            y0_new = y_center - axes_physical_height_mm/2
+            y1_new = y_center + axes_physical_height_mm/2
+            # reset axis limits
+            self.ax.set_xlim(x0_new,x1_new)
+            self.ax.set_ylim(y0_new,y1_new)
+
     def __get_node_info_textbox_text(self, node_id):
         node = self.graph.nodes[node_id]
         annotation_text  = f"Node \"{node_id}\"\n"
@@ -654,6 +691,60 @@ class BasicCenterlineGraphInteractiveDrawer():
         self.textbox_info_artist.shrinkB=0.0
         self.textbox_info_artist.set_visible(True)
 
+    def __get_ripples_artist(self) -> matplotlib.collections.CircleCollection:
+        """Get the Circle artist to draw the ripples.
+        Same zorder as the highlight artist.
+        """
+        offset_zero_ = self.nodes_positions[0,[0,1]]
+        node_ripples_artist = matplotlib.collections.CircleCollection(
+            sizes=[55],
+            offsets=offset_zero_,
+            offset_transform=self.ax.transData,
+            facecolors="none",
+            alpha=1.0,
+            linewidths=0.6,
+            edgecolor=INFO_ARROW_FACECOLOR,
+            zorder=3.0
+        )
+        return node_ripples_artist
+    
+    def __animate_double_click_ripples_init(self):
+        """ Initialize animation
+        """
+        # Set ripple to current node position
+        highlighted_node_position = numpy.array(
+            [self.graph.nodes[self.node_highlighted_id]['x'],self.graph.nodes[self.node_highlighted_id]['y'],self.graph.nodes[self.node_highlighted_id]['z']] 
+        )
+        current_slice = self.viewplane_carousel_planes_list_slices[self.viewplane_carousel_current_index]
+        self.node_ripples_artist.set_offsets([highlighted_node_position[current_slice]])
+        # Set ripple viz properties to their initial ones
+        self.node_ripples_artist.set_sizes([55])
+        self.node_ripples_artist.set_alpha(1.0)
+        self.node_ripples_artist.set_linewidths([0.6])
+        # Set it visible
+        self.node_ripples_artist.set_visible(True)
+        return self.node_ripples_artist,
+
+    def __animate_double_click_ripples(self, frame_number):
+        """ Standard 30 frames per second.
+        """
+        # Corresponds to the update(frame_number) function in https://matplotlib.org/stable/gallery/animation/rain.html
+        LINE_WIDTH_0 = 0.6
+        if frame_number < self.ripples_animation_n_frames -1:
+            # Enlarge ripple
+            ripple_area_increase = 0.5*numpy.pi*(frame_number)**2
+            self.node_ripples_artist.set_sizes([55+ripple_area_increase])
+            # Dim ripple
+            alpha_new = (1.0-frame_number/(self.ripples_animation_n_frames-1))
+            self.node_ripples_artist.set_alpha(alpha_new)
+            # Make it thinner
+            self.node_ripples_artist.set_linewidths(
+                [max(0.01,LINE_WIDTH_0-frame_number*0.012)]
+            )
+        else:
+            self.node_ripples_artist.set_visible(False)
+        return self.node_ripples_artist,
+
     def on_left_mouse_button_press_event_node_highlighting(self, event: matplotlib.backend_bases.MouseEvent):
         """Node highlighting and textbox display on a double left mouse click.
         """
@@ -691,6 +782,25 @@ class BasicCenterlineGraphInteractiveDrawer():
             text_ = self.__get_node_info_textbox_text(self.node_highlighted_id)
         self.__update_highlight_and_info_textbox_artists(text_)
         event.canvas.draw_idle()
+        # Ripple animation
+        # If an animation is already running, stop it, delete it manually and set to None
+        if isinstance(self.ripples_animation, matplotlib_animation_FuncAnimation):
+            if self.ripples_animation.event_source is not None:
+                self.ripples_animation.event_source.stop()
+            del self.ripples_animation
+            self.ripples_animation = None
+        # https://matplotlib.org/stable/api/_as_gen/matplotlib.animation.FuncAnimation.html
+        self.ripples_animation_n_frames = 40
+        self.ripples_animation = matplotlib_animation_FuncAnimation(
+            self.fig,
+            self.__animate_double_click_ripples,
+            init_func=self.__animate_double_click_ripples_init,
+            frames=self.ripples_animation_n_frames,
+            interval=1000/60,
+            repeat=False,
+            blit=True
+        )
+        self.node_ripples_artist.set_visible(False)
         return
 
     def on_mouse_scroll_event_node_highlighting(self, event: matplotlib.backend_bases.MouseEvent):
@@ -699,8 +809,21 @@ class BasicCenterlineGraphInteractiveDrawer():
         """
         if self.node_highlighted_id is None:
             return
+        # Define how many jumps to do depending on the scroll intensity and on the zoom level
+        threshold_zoom_ = 15 # mm
+        zoom_ = min([(self.ax.get_xlim()[1] - self.ax.get_xlim()[0]), (self.ax.get_ylim()[1] - self.ax.get_ylim()[0])])
+        n_jumps = int(
+            min(
+                [40, abs(event.step) * 0.5 * zoom_]
+            )
+        ) if zoom_ > threshold_zoom_ else 1
         # Get the node's neighbors
-        neighbors_plus_self = list(self.graph.neighbors(self.node_highlighted_id)) + [self.node_highlighted_id]
+        neighbors_plus_self = [self.node_highlighted_id]
+        for _ in range(n_jumps):
+            nodes_iterators_list_ = [self.graph.neighbors(n) for n in neighbors_plus_self]
+            for nodes_iterator_ in nodes_iterators_list_:
+                neighbors_plus_self += list(nn for nn in nodes_iterator_)
+            neighbors_plus_self = list(set(neighbors_plus_self))
         # Get each neighbour's distance from ostium
         neighbors_distances = [self.nodes_distance_from_ostia[n] for n in neighbors_plus_self]
         if event.button == "up":
@@ -715,12 +838,30 @@ class BasicCenterlineGraphInteractiveDrawer():
         old_node_id = self.node_highlighted_id
         self.node_highlighted_id = new_node_id
         if self.node_highlighted_id != old_node_id:
-            # Update
+            # Update the info textbox and the highlighing node
             self.__update_highlight_and_info_textbox_artists(None)
             # Draw changes
             event.canvas.draw_idle()
-        
-        
+            # Ripple animation (faster)
+            # If an animation is already running, stop it, delete it manually and set to None
+            if isinstance(self.ripples_animation, matplotlib_animation_FuncAnimation):
+                if self.ripples_animation.event_source is not None:
+                    self.ripples_animation.event_source.stop()
+                self.ripples_animation = None
+            # https://matplotlib.org/stable/api/_as_gen/matplotlib.animation.FuncAnimation.html
+            self.ripples_animation_n_frames = 10
+            self.ripples_animation = matplotlib_animation_FuncAnimation(
+                self.fig,
+                self.__animate_double_click_ripples,
+                init_func=self.__animate_double_click_ripples_init,
+                frames=self.ripples_animation_n_frames,
+                interval=1000/60,
+                repeat=False,
+                blit=True
+            )
+            self.node_ripples_artist.set_visible(False)
+
+ 
 def drawCenterlinesGraph2D(graph: networkx.Graph):
     """Draws the Coronary Artery tree centerlines in an interactive way.
     
@@ -755,6 +896,8 @@ def drawCenterlinesGraph2D(graph: networkx.Graph):
     )
     ax.set_xlabel("mm")
     ax.set_ylabel("mm")
+    ax.get_xaxis().set_units("mm")
+    ax.get_yaxis().set_units("mm")
     ax.set_axisbelow(True)
     ax.set_title(graph.graph["image_id"])
     # Content
