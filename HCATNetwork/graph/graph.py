@@ -29,7 +29,7 @@ from ..node.node import ArteryPointTopologyClass, ArteryPointTree
 
 ###################################
 # LOADING and SAVING to text files
-##################################
+###################################
 
 def saveGraph(
         graph: networkx.classes.graph.Graph|
@@ -39,11 +39,14 @@ def saveGraph(
         file_path: str):
     """saveGraph in GML file format
     Saves the graph in GML format using the networkx interface.
-    If some data are:
-    - numpy arrays
-    - lists or multidimensional lists of basic python types
+
+    If some graph, node or edge features are:
+        * numpy arrays
+        * lists or multidimensional lists of basic python types
+
     data are converted into json strings with json.dumps() before 
     saving the graph in GML format.
+    The file also contains everything needed to convert back the json strings into the original data types.
     """
     # Make a deep copy of the graph, otherwise the graph will be modified even outside this function
     graph = copy.deepcopy(graph)
@@ -263,7 +266,7 @@ class BasicCenterlineGraph(CoreDict):
         raise RuntimeError(f"Node {n} is a coronary ostium associated with no arterial tree (nor left, nor right).")
 
     @staticmethod
-    def getCoronaryOstiaNodeId(graph: networkx.classes.graph.Graph) -> tuple():
+    def get_coronary_ostia_node_id(graph: networkx.classes.graph.Graph) -> tuple():
         """Gets the left and right coronary ostia node ids.
         Returns a  2-tuple of strings, where the first element is the left ostium node id, and the second element is the right ostium node id.
         If an ostium cannot be found, the element will be set to None.
@@ -283,7 +286,111 @@ class BasicCenterlineGraph(CoreDict):
                     return tuple([left_ostium_n, right_ostium_n])
         # If the code reaches this point, it means that the graph does not have two ostia, so return the tuple with a None element
         return tuple([left_ostium_n, right_ostium_n])
+    
+    @staticmethod
+    def get_segments(graph: networkx.classes.graph.Graph) -> list[tuple[str]]:
+        """Gets the segments of the graph, starting from the coronary ostia.
+
+        The segments are returned as a list of tuples, each containing the start and end node id of a segment delimited by either an ostium, intersection, or endpoint.
         
+        Parameters
+        ----------
+        graph : networkx.classes.graph.Graph
+            The graph to be walked.
+
+        Returns
+        -------
+        list[tuple[str]]
+            A list of tuples, each containing the start and end node id of a segment delimited by either an ostium, intersection, or endpoint.
+        
+        """
+        segments = []
+        for start_node_id in BasicCenterlineGraph.get_coronary_ostia_node_id(graph):
+            nodes_distances_from_start_node = networkx.single_source_dijkstra_path_length(graph, start_node_id)
+            breadth_first_search_successors_from_ostium = networkx.bfs_successors(graph, start_node_id)
+            # Walk the graph from the ostium to the next landmark (intersection or endpoint)
+            current_node_id = start_node_id
+            def recursive_walk(segment_start_node_id_next, segments):
+                ###  TO DOOOOOO
+                # SOMEHOW YOU CAN DO IT WITH RECURSION
+                # JUST GET TO THE NEXT LANDMARK AND THEN RECURSIVELY CALL THE FUNCTION
+                # BEFORE RECURSIVELY CALLING THE FUNCTION, ADD THE SEGMENT TO THE LIST
+                next_nodes = breadth_first_search_successors_from_ostium[segment_start_node_id_next]
+                # do not know if following code works, copilot did it but I do not understand it
+                if len(next_nodes) > 1:
+                    segment_end_node_id = next_nodes[0]
+                    segments.append((segment_start_node_id_next, segment_end_node_id))
+                    recursive_walk(current_node_id, segment_start_node_id_next, segment_end_node_id)
+                elif len(next_nodes) == 1:
+                    segment_end_node_id = next_nodes[0]
+                    segments.append((segment_start_node_id_next, segment_end_node_id))
+                    recursive_walk(current_node_id, segment_start_node_id_next, segment_end_node_id)
+                else:
+                    pass
+
+            
+
+            
+
+            '''
+            while True:
+                # Get the neighbors of the current node
+                neighbors = list(graph.neighbors(current_node_id))
+                # If the current node is an endpoint or an intersection, add the segment and move to the next landmark
+                if len(neighbors) > 2 or len(neighbors) == 1:
+                    segments.append((current_node_id, neighbors[0]))
+                    if len(neighbors) > 1:
+                        current_node_id = neighbors[1]
+                    else:
+                        break
+                # If the current node is an ostium, add the segment and move to the next ostium
+                elif graph.nodes[current_node_id]['topology_class'].value == ArteryPointTopologyClass.OSTIUM.value:
+                    segments.append((current_node_id, neighbors[0]))
+                    break
+                # If the current node is a regular node, add the segment and move to the next node
+                else:
+                    segments.append((current_node_id, neighbors[0]))
+                    current_node_id = neighbors[0]
+            '''
+        return segments
+
+    @staticmethod
+    def get_simplified_landmarks_graph(graph):
+        pass
+        
+    @staticmethod
+    def resample_coronary_artery_tree_disjointed(graph: networkx.classes.graph.Graph, mm_between_nodes: float = 0.5):
+        """Resamples the coronary artery tree so that two connected points are on average mm_between_nodes millimeters apart.
+
+        NOTE: This function only works correctly with coronary artery trees which are disjointed, meaning that the left and right trees are not connected. 
+
+        The tree is resampled so that the absolute position of coronary ostia, intersections and endpoints is preserved.
+        The position of the nodes between these landmarks can vary, and so can radius data, which is interpolated (linear).
+        
+        Parameters
+        ----------
+        graph : networkx.classes.graph.Graph
+            The graph to be resampled.
+        mm_between_nodes : float, optional
+            The average distance between two connected points, in millimeters, by default 0.5.
+        
+        """
+        pass
+        # Get the two coronary ostia node ids
+        left_ostium_n, right_ostium_n = BasicCenterlineGraph.get_coronary_ostia_node_id(graph)
+        # Get all nodes distances from the left ostium
+        distances_from_left_ostium = networkx.single_source_dijkstra_path_length(graph, left_ostium_n)
+        # Get all nodes distances from the right ostium
+        distances_from_right_ostium = networkx.single_source_dijkstra_path_length(graph, right_ostium_n)
+        #########################
+        #########################
+        #########################
+        #########################
+        #########################
+        
+        # Walk recursively to the next landmark (intersection or endpoint) and resample the segment in between
+
+            
         
 
 
@@ -306,26 +413,11 @@ class HeartDominance(Enum):
 if __name__ == "__main__":
     print("Running 'HCATNetwork.graph' module")
     
-    # example: save a graph with nodes holding a random ndarray, and see what happens
-    attr_dict = BasicCenterlineGraph
-    attr_dict["image_id"] = "nessuna immagine"
-    attr_dict["are_left_right_disjointed"] = 1
-    g = networkx.Graph(**attr_dict)
-    for i in range(5):
-        ndarray = numpy.random.randn(i+1, i+2, i+4)
-        g.add_node(str(i), numpy_array=ndarray) #json.dumps(ndarray.tolist()))
-    path = "C:\\Users\\lecca\\Desktop\\AAMIASoftwares-research\\HCATNetwork\\HCATNetwork\\test\\prova_grafo_numpy.GML"
-    saveGraph(g, path)
-    g2 = loadGraph(path)
-    saveGraph(g2, path[:-5]+"2.GML")
-    g3 = loadGraph(path[:-5]+"2.GML")
-
-    print(g.nodes["0"], g2.nodes["0"], g3.nodes["0"], "\n\n")
-    quit()
-    for n in g2.nodes.values():
-        n["numpy_array"] = json.loads(n["numpy_array"])
-    print([(type(n[1]["numpy_array"]), n[1]["numpy_array"]) for n in g2.nodes.items()][0])
-    print([(type(n[1]["numpy_array"][0][0][0]),n[1]["numpy_array"][0][0][0]) for n in g2.nodes.items()][0])
+    # Load a coronary artery tree graph
+    f_prova = "C:\\Users\\lecca\\Desktop\\AAMIASoftwares-research\\Data\\CAT08\\CenterlineGraphs_FromReference\\dataset00.GML"
+    g_ = loadGraph(f_prova)
+    segments = BasicCenterlineGraph.get_segments(g_)
+    print(segments)
 
 
 

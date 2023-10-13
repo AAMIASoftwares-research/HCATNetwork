@@ -286,7 +286,7 @@ class BasicCenterlineGraphInteractiveDrawer():
         If two ostia are present, the distance is the minimum of the two.
         """
         node_dist_map = {}
-        ostia = BasicCenterlineGraph.getCoronaryOstiaNodeId(graph=self.graph)
+        ostia = BasicCenterlineGraph.get_coronary_ostia_node_id(graph=self.graph)
         for ostium in ostia:
             node_dist_map.update({ostium: 0.0})
             d_ = networkx.single_source_dijkstra_path_length(self.graph, source=ostium, weight="euclidean_distance")
