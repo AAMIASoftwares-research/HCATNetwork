@@ -862,7 +862,7 @@ class BasicCenterlineGraphInteractiveDrawer():
             self.node_ripples_artist.set_visible(False)
 
  
-def drawCenterlinesGraph2D(graph: networkx.Graph):
+def drawCenterlinesGraph2D(graph: networkx.Graph, backend: str = "hcatnetwork"):
     """Draws the Coronary Artery tree centerlines in an interactive way.
     
     Parameters
@@ -872,6 +872,12 @@ def drawCenterlinesGraph2D(graph: networkx.Graph):
             nodes: HCATNetwork.node.SimpleCenterlineNode
             edges: HCATNetwork.edge.BasicEdge
             graph: HCATNetwork.graph.BasicCenterlineGraph
+    backend : str, optional = ["hcatnetwork", "networkx"]
+        The backend to use for drawing. The default is "hcatnetwork",
+        which uses the HCATNetwork library to draw the graph interactively.
+        Its backend is matplotlib.
+        The other option is "networkx", which uses the networkx library to draw the graph
+        in a simpler way (no interactivity). Its backend is matplotlib.
     """
     # Figure
     fig, ax = plt.subplots(
@@ -901,7 +907,20 @@ def drawCenterlinesGraph2D(graph: networkx.Graph):
     ax.set_axisbelow(True)
     ax.set_title(graph.graph["image_id"])
     # Content
-    c = BasicCenterlineGraphInteractiveDrawer(fig, ax, graph)
+    if backend == "hcatnetwork" or backend == None:
+        drawer = BasicCenterlineGraphInteractiveDrawer(fig, ax, graph)
+    elif backend == "networkx":
+        networkx.draw_networkx(
+            graph,
+            pos=numpy.array([[n['x'],n['y']] for n in graph.nodes.values()]),
+            ax=ax,
+            node_size=20,
+            edge_color=EDGE_FACECOLOR_DEFAULT,
+            width=0.4,
+            with_labels=False
+        )
+    else:
+        raise ValueError(f"Backend {backend} not supported.")
     # Rescale axes view to content
     ax.autoscale_view()
     # Plot
