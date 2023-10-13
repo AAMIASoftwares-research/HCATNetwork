@@ -269,7 +269,7 @@ class BasicCenterlineGraphInteractiveDrawer():
         for i, (u_,v_) in enumerate(self.graph.edges(data=False)):
             edges_positions[i,0,:] = self.graph.nodes[u_]["x"], self.graph.nodes[u_]["y"], self.graph.nodes[u_]["z"]
             edges_positions[i,1,:] = self.graph.nodes[v_]["x"], self.graph.nodes[v_]["y"], self.graph.nodes[v_]["z"]
-        return edges_positions
+        return edges_positions.dtype("float")
 
     def getEdgesArtistMonocrome(self) -> matplotlib.collections.LineCollection:
         """Returns a matplotlib.collections.LineCollection object with the edges drawn as mono-chromatic lines."""
