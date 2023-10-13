@@ -198,7 +198,7 @@ class BasicCenterlineGraphInteractiveDrawer():
         # Fill the array
         for i, n in enumerate(self.graph.nodes):
             nodes_positions[i,:] = self.graph.nodes[n]["x"], self.graph.nodes[n]["y"], self.graph.nodes[n]["z"]
-        return nodes_positions
+        return nodes_positions.dtype("float")
     
     def getNodesRadii(self) -> numpy.ndarray:
         """Returns a numpy.ndarray of shape (n_nodes, ) of nodes radii.
