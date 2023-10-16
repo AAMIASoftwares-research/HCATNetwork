@@ -420,6 +420,7 @@ class BasicCenterlineGraph(CoreDict):
         # Get the anatomic segments of the original graph
         segments = BasicCenterlineGraph.get_anatomic_segments_ids(graph)
         # Resample each segment
+        node_id_counter = 0
         for n0, n1 in segments:
             # Get the number of nodes to put into this segment (counting also n0 and n1)
             # Therefore, the number of nodes is always at least 2.
@@ -428,8 +429,41 @@ class BasicCenterlineGraph(CoreDict):
                 [2, int(length / mm_between_nodes)]
             )
             # Resample the segment
-            pass
-        return None #graph_new                
+            if n_nodes == 2:
+                # Just add the two nodes
+                if n0 not in graph_new.nodes:
+                    graph_new.add_node(n0, **graph.nodes[n0])
+                if n1 not in graph_new.nodes:
+                    graph_new.add_node(n1, **graph.nodes[n1])
+                # Add the edge
+                # Here, the edge's property "euclidean_distance" is the actual distance between the nodes.
+                if not graph_new.has_edge(n0, n1):
+                    edge_features = BasicEdge()
+                    n0_p = numpy.array([graph.nodes[n0]["x"], graph.nodes[n0]["y"], graph.nodes[n0]["z"]])
+                    n1_p = numpy.array([graph.nodes[n1]["x"], graph.nodes[n1]["y"], graph.nodes[n1]["z"]])
+                    edge_features["euclidean_distance"] = numpy.linalg.norm(n0_p - n1_p)
+                    edge_features.updateWeightFromEuclideanDistance()
+                    graph_new.add_edge(n0, n1, **edge_features)
+            else:
+                distances_to_sample = numpy.linspace(0, length, n_nodes)
+                nodes_to_connect_in_sequence_list = []
+                # First and last node will be n0 and n1, respectively
+                # Add the first node
+                if n0 not in graph_new.nodes:
+                    graph_new.add_node(n0, **graph.nodes[n0])
+                nodes_to_connect_in_sequence_list.append(n0)
+                # Add the middle nodes
+                # - get all nodes in the segment
+                nodes_in_segment = networkx.algorithms.shortest_path(graph, n0, n1)
+                for d in distances_to_sample[1:-1]:
+                    #########################################
+                    pass
+                # Add the last node
+                if n1 not in graph_new.nodes:
+                    graph_new.add_node(n1, **graph.nodes[n1])
+                nodes_to_connect_in_sequence_list.append(n1)
+
+        return graph_new                
 
 
 
