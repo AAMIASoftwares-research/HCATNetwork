@@ -288,7 +288,7 @@ class BasicCenterlineGraph(CoreDict):
         return tuple([left_ostium_n, right_ostium_n])
     
     @staticmethod
-    def get_segments(graph: networkx.classes.graph.Graph) -> list[tuple[str]]:
+    def get_segments_ids(graph: networkx.classes.graph.Graph) -> list[tuple[str]]:
         """Gets the segments of the graph, starting from the coronary ostia.
 
         The segments are returned as a list of tuples, each containing the start and end node id of a segment delimited by either an ostium, intersection, or endpoint.
@@ -303,55 +303,40 @@ class BasicCenterlineGraph(CoreDict):
         list[tuple[str]]
             A list of tuples, each containing the start and end node id of a segment delimited by either an ostium, intersection, or endpoint.
         
-        """
+        """  
         segments = []
         for start_node_id in BasicCenterlineGraph.get_coronary_ostia_node_id(graph):
-            nodes_distances_from_start_node = networkx.single_source_dijkstra_path_length(graph, start_node_id)
-            breadth_first_search_successors_from_ostium = networkx.bfs_successors(graph, start_node_id)
-            # Walk the graph from the ostium to the next landmark (intersection or endpoint)
-            current_node_id = start_node_id
-            def recursive_walk(segment_start_node_id_next, segments):
-                ###  TO DOOOOOO
-                # SOMEHOW YOU CAN DO IT WITH RECURSION
-                # JUST GET TO THE NEXT LANDMARK AND THEN RECURSIVELY CALL THE FUNCTION
-                # BEFORE RECURSIVELY CALLING THE FUNCTION, ADD THE SEGMENT TO THE LIST
-                next_nodes = breadth_first_search_successors_from_ostium[segment_start_node_id_next]
-                # do not know if following code works, copilot did it but I do not understand it
-                if len(next_nodes) > 1:
-                    segment_end_node_id = next_nodes[0]
-                    segments.append((segment_start_node_id_next, segment_end_node_id))
-                    recursive_walk(current_node_id, segment_start_node_id_next, segment_end_node_id)
-                elif len(next_nodes) == 1:
-                    segment_end_node_id = next_nodes[0]
-                    segments.append((segment_start_node_id_next, segment_end_node_id))
-                    recursive_walk(current_node_id, segment_start_node_id_next, segment_end_node_id)
-                else:
-                    pass
-
-            
-
-            
-
-            '''
-            while True:
-                # Get the neighbors of the current node
-                neighbors = list(graph.neighbors(current_node_id))
-                # If the current node is an endpoint or an intersection, add the segment and move to the next landmark
-                if len(neighbors) > 2 or len(neighbors) == 1:
-                    segments.append((current_node_id, neighbors[0]))
-                    if len(neighbors) > 1:
-                        current_node_id = neighbors[1]
-                    else:
-                        break
-                # If the current node is an ostium, add the segment and move to the next ostium
-                elif graph.nodes[current_node_id]['topology_class'].value == ArteryPointTopologyClass.OSTIUM.value:
-                    segments.append((current_node_id, neighbors[0]))
-                    break
-                # If the current node is a regular node, add the segment and move to the next node
-                else:
-                    segments.append((current_node_id, neighbors[0]))
-                    current_node_id = neighbors[0]
-            '''
+            # Fore each node, get the successor of the node starting from the ostium
+            breadth_first_search_successors_from_ostium = {key: val for (key, val) in networkx.bfs_successors(graph, start_node_id)}
+            next_buffer_list: list = breadth_first_search_successors_from_ostium[start_node_id]
+            start_buffer_list: list = [start_node_id]
+            while len(next_buffer_list) != 0:
+                # Get the next node
+                current_node_id = next_buffer_list[0]
+                # Since you considered this, remove it from the list
+                next_buffer_list.pop(0)
+                # Walk up to the next landmark (intersection, or endpoint)
+                stay_in_loop_ = current_node_id in breadth_first_search_successors_from_ostium # endpoint check
+                if stay_in_loop_:
+                    stay_in_loop_ = stay_in_loop_ and len(breadth_first_search_successors_from_ostium[current_node_id]) == 1 # intersection check
+                while stay_in_loop_:
+                    # Jump to the next node
+                    current_node_id = breadth_first_search_successors_from_ostium[current_node_id][0]
+                    # Check if the node is a landmark (intersection, or endpoint)
+                    stay_in_loop_ = current_node_id in breadth_first_search_successors_from_ostium # endpoint check
+                    if stay_in_loop_:
+                        stay_in_loop_ = stay_in_loop_ and len(breadth_first_search_successors_from_ostium[current_node_id]) == 1 # intersection check
+                # This node should be a landmark (intersection, or endpoint)
+                # - add the segment
+                segments.append((start_buffer_list[0], current_node_id))
+                # - the start node was considered, so remove it from the start list
+                start_buffer_list.pop(0)
+                # - set up data to walk to next landmark(s)
+                if current_node_id in breadth_first_search_successors_from_ostium:
+                    if len(breadth_first_search_successors_from_ostium[current_node_id]) != 0:
+                        for new_next_node in breadth_first_search_successors_from_ostium[current_node_id]:
+                            start_buffer_list.append(current_node_id)
+                            next_buffer_list.append(new_next_node)
         return segments
 
     @staticmethod
@@ -359,7 +344,7 @@ class BasicCenterlineGraph(CoreDict):
         pass
         
     @staticmethod
-    def resample_coronary_artery_tree_disjointed(graph: networkx.classes.graph.Graph, mm_between_nodes: float = 0.5):
+    def resample_coronary_artery_tree(graph: networkx.classes.graph.Graph, mm_between_nodes: float = 0.5):
         """Resamples the coronary artery tree so that two connected points are on average mm_between_nodes millimeters apart.
 
         NOTE: This function only works correctly with coronary artery trees which are disjointed, meaning that the left and right trees are not connected. 
@@ -416,7 +401,7 @@ if __name__ == "__main__":
     # Load a coronary artery tree graph
     f_prova = "C:\\Users\\lecca\\Desktop\\AAMIASoftwares-research\\Data\\CAT08\\CenterlineGraphs_FromReference\\dataset00.GML"
     g_ = loadGraph(f_prova)
-    segments = BasicCenterlineGraph.get_segments(g_)
+    segments = BasicCenterlineGraph.get_segments_ids(g_)
     print(segments)
 
 
