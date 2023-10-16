@@ -198,7 +198,7 @@ class BasicCenterlineGraphInteractiveDrawer():
         # Fill the array
         for i, n in enumerate(self.graph.nodes):
             nodes_positions[i,:] = self.graph.nodes[n]["x"], self.graph.nodes[n]["y"], self.graph.nodes[n]["z"]
-        return nodes_positions.dtype("float")
+        return nodes_positions.astype("float")
     
     def getNodesRadii(self) -> numpy.ndarray:
         """Returns a numpy.ndarray of shape (n_nodes, ) of nodes radii.
@@ -269,7 +269,7 @@ class BasicCenterlineGraphInteractiveDrawer():
         for i, (u_,v_) in enumerate(self.graph.edges(data=False)):
             edges_positions[i,0,:] = self.graph.nodes[u_]["x"], self.graph.nodes[u_]["y"], self.graph.nodes[u_]["z"]
             edges_positions[i,1,:] = self.graph.nodes[v_]["x"], self.graph.nodes[v_]["y"], self.graph.nodes[v_]["z"]
-        return edges_positions.dtype("float")
+        return edges_positions.astype("float")
 
     def getEdgesArtistMonocrome(self) -> matplotlib.collections.LineCollection:
         """Returns a matplotlib.collections.LineCollection object with the edges drawn as mono-chromatic lines."""

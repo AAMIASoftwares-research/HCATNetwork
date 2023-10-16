@@ -26,6 +26,7 @@ import networkx
 
 from ..core.core import CoreDict
 from ..node.node import ArteryPointTopologyClass, ArteryPointTree
+from ..edge.edge import BasicEdge
 
 ###################################
 # LOADING and SAVING to text files
@@ -44,9 +45,24 @@ def saveGraph(
         * numpy arrays
         * lists or multidimensional lists of basic python types
 
-    data are converted into json strings with json.dumps() before 
-    saving the graph in GML format.
+    Data are converted into json strings with json.dumps() before saving the graph in GML format.
     The file also contains everything needed to convert back the json strings into the original data types.
+    
+    Parameters
+    ----------
+    graph : networkx.classes.graph.Graph|
+            networkx.classes.digraph.DiGraph|
+            networkx.classes.multigraph.MultiGraph|
+            networkx.classes.multidigraph.MultiDiGraph
+        The graph to be saved.
+    file_path : str
+        The path to the file where the graph will be saved as GML.
+
+    Raises
+    ------
+    ValueError
+        If any feature of the graph, node or edge is None.
+    
     """
     # Make a deep copy of the graph, otherwise the graph will be modified even outside this function
     graph = copy.deepcopy(graph)
@@ -288,10 +304,13 @@ class BasicCenterlineGraph(CoreDict):
         return tuple([left_ostium_n, right_ostium_n])
     
     @staticmethod
-    def get_segments_ids(graph: networkx.classes.graph.Graph) -> list[tuple[str]]:
+    def get_anatomic_segments_ids(graph: networkx.classes.graph.Graph) -> list[tuple[str]]:
         """Gets the segments of the graph, starting from the coronary ostia.
 
-        The segments are returned as a list of tuples, each containing the start and end node id of a segment delimited by either an ostium, intersection, or endpoint.
+        The segments are returned as a list of tuples, each containing the start and end node id of
+        a segment delimited by either an ostium, intersection, or endpoint.
+        A segment is a piece of graph connecting an ostium or intersection to an intersection or an endpoint,
+        without any other landmark (ostium, intersection, endpoint) in between.
         
         Parameters
         ----------
@@ -340,14 +359,45 @@ class BasicCenterlineGraph(CoreDict):
         return segments
 
     @staticmethod
-    def get_simplified_landmarks_graph(graph):
-        pass
+    def get_anatomic_subgraph(graph: networkx.classes.graph.Graph) -> networkx.classes.graph.Graph:
+        """Gets the anatomic subgraph of the graph, meaning the graph of just coronary ostia, intersections and endpoints.
+
+        In the returned graph, the distance between nodes is not the euclidean distance between the nodes,
+        but the euclidean length of the segment.
+
+        Parameters
+        ----------
+        graph : networkx.classes.graph.Graph
+            The graph to be simplified.
+
+        Returns
+        -------
+        networkx.classes.graph.Graph
+            The simplified graph.
+        
+        """
+        # Create the subgraph, copying the info from the original graph
+        subgraph = networkx.Graph(**graph.graph)
+        # Get the segments
+        segments = BasicCenterlineGraph.get_anatomic_segments_ids(graph)
+        # Add the nodes
+        for segment in segments:
+            if not segment[0] in subgraph.nodes:
+                subgraph.add_node(segment[0], **graph.nodes[segment[0]])
+            if not segment[1] in subgraph.nodes:
+                subgraph.add_node(segment[1], **graph.nodes[segment[1]])
+        # Add the edges
+        for segment in segments:
+            edge_features = BasicEdge()
+            edge_features["euclidean_distance"] = networkx.algorithms.shortest_path_length(graph, segment[0], segment[1], weight="euclidean_distance")
+            edge_features.updateWeightFromEuclideanDistance()
+            subgraph.add_edge(segment[0], segment[1], **edge_features)
+        # Done
+        return subgraph
         
     @staticmethod
-    def resample_coronary_artery_tree(graph: networkx.classes.graph.Graph, mm_between_nodes: float = 0.5):
+    def resample_coronary_artery_tree(graph: networkx.classes.graph.Graph, mm_between_nodes: float = 0.5) -> networkx.classes.graph.Graph:
         """Resamples the coronary artery tree so that two connected points are on average mm_between_nodes millimeters apart.
-
-        NOTE: This function only works correctly with coronary artery trees which are disjointed, meaning that the left and right trees are not connected. 
 
         The tree is resampled so that the absolute position of coronary ostia, intersections and endpoints is preserved.
         The position of the nodes between these landmarks can vary, and so can radius data, which is interpolated (linear).
@@ -358,22 +408,30 @@ class BasicCenterlineGraph(CoreDict):
             The graph to be resampled.
         mm_between_nodes : float, optional
             The average distance between two connected points, in millimeters, by default 0.5.
+
+        Returns
+        -------
+        networkx.classes.graph.Graph
+            The resampled graph.
         
         """
-        pass
-        # Get the two coronary ostia node ids
-        left_ostium_n, right_ostium_n = BasicCenterlineGraph.get_coronary_ostia_node_id(graph)
-        # Get all nodes distances from the left ostium
-        distances_from_left_ostium = networkx.single_source_dijkstra_path_length(graph, left_ostium_n)
-        # Get all nodes distances from the right ostium
-        distances_from_right_ostium = networkx.single_source_dijkstra_path_length(graph, right_ostium_n)
-        #########################
-        #########################
-        #########################
-        #########################
-        #########################
-        
-        # Walk recursively to the next landmark (intersection or endpoint) and resample the segment in between
+        # Create the new graph, copying the info from the original graph
+        graph_new = networkx.Graph(**graph.graph)
+        # Get the anatomic segments of the original graph
+        segments = BasicCenterlineGraph.get_anatomic_segments_ids(graph)
+        # Resample each segment
+        for n0, n1 in segments:
+            # Get the number of nodes to put into this segment (counting also n0 and n1)
+            # Therefore, the number of nodes is always at least 2.
+            length = networkx.algorithms.shortest_path_length(graph, n0, n1, weight="euclidean_distance")
+            n_nodes = max(
+                [2, int(length / mm_between_nodes)]
+            )
+            # Resample the segment
+            pass
+        return None #graph_new                
+
+
 
             
         
@@ -401,9 +459,12 @@ if __name__ == "__main__":
     # Load a coronary artery tree graph
     f_prova = "C:\\Users\\lecca\\Desktop\\AAMIASoftwares-research\\Data\\CAT08\\CenterlineGraphs_FromReference\\dataset00.GML"
     g_ = loadGraph(f_prova)
-    segments = BasicCenterlineGraph.get_segments_ids(g_)
+    segments = BasicCenterlineGraph.get_anatomic_segments_ids(g_)
     print(segments)
-
+    
+    subgraph = BasicCenterlineGraph.get_anatomic_subgraph(g_)
+    from ..draw.draw import drawCenterlinesGraph2D
+    drawCenterlinesGraph2D(subgraph)
 
 
     
