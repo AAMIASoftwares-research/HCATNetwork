@@ -25,7 +25,7 @@ import numpy
 import networkx
 
 from ..core.core import CoreDict
-from ..node.node import ArteryPointTopologyClass, ArteryPointTree
+from ..node.node import SimpleCenterlineNode, ArteryPointTopologyClass, ArteryPointTree
 from ..edge.edge import BasicEdge
 
 ###################################
@@ -419,6 +419,7 @@ class BasicCenterlineGraph(CoreDict):
         graph_new = networkx.Graph(**graph.graph)
         # Get the anatomic segments of the original graph
         segments = BasicCenterlineGraph.get_anatomic_segments_ids(graph)
+        untouchable_node_ids = [a for (a,b) in segments] + [b for (a,b) in segments]
         # Resample each segment
         node_id_counter = 0
         for n0, n1 in segments:
@@ -431,9 +432,9 @@ class BasicCenterlineGraph(CoreDict):
             # Resample the segment
             if n_nodes == 2:
                 # Just add the two nodes
-                if n0 not in graph_new.nodes:
+                if not n0 in graph_new.nodes:
                     graph_new.add_node(n0, **graph.nodes[n0])
-                if n1 not in graph_new.nodes:
+                if not n1 in graph_new.nodes:
                     graph_new.add_node(n1, **graph.nodes[n1])
                 # Add the edge
                 # Here, the edge's property "euclidean_distance" is the actual distance between the nodes.
@@ -446,29 +447,62 @@ class BasicCenterlineGraph(CoreDict):
                     graph_new.add_edge(n0, n1, **edge_features)
             else:
                 distances_to_sample = numpy.linspace(0, length, n_nodes)
-                nodes_to_connect_in_sequence_list = []
+                nodes_ids_to_connect_in_sequence_list = []
                 # First and last node will be n0 and n1, respectively
                 # Add the first node
-                if n0 not in graph_new.nodes:
+                if not n0 in graph_new.nodes:
                     graph_new.add_node(n0, **graph.nodes[n0])
-                nodes_to_connect_in_sequence_list.append(n0)
+                nodes_ids_to_connect_in_sequence_list.append(n0)
                 # Add the middle nodes
                 # - get all nodes in the segment
                 nodes_in_segment = networkx.algorithms.shortest_path(graph, n0, n1)
+                nodes_in_segment_distances_from_n0 = {n__: networkx.algorithms.shortest_path_length(graph, n0, n__, weight="euclidean_distance") for n__ in nodes_in_segment}
                 for d in distances_to_sample[1:-1]:
-                    #########################################
-                    pass
+                    # Find node before and after the distance d
+                    node_before_, node_ = None, None
+                    for n in nodes_in_segment:
+                        if nodes_in_segment_distances_from_n0[n] <= d:
+                            node_before_ = n
+                        elif nodes_in_segment_distances_from_n0[n] > d:
+                            node_ = n
+                            break
+                    # Interpolate the position and radius of the node
+                    p_n_ = numpy.array([graph.nodes[node_]["x"], graph.nodes[node_]["y"], graph.nodes[node_]["z"]])
+                    p_n_b_ = numpy.array([graph.nodes[node_before_]["x"], graph.nodes[node_before_]["y"], graph.nodes[node_before_]["z"]])
+                    proportion_ = (d - nodes_in_segment_distances_from_n0[node_before_]) / (nodes_in_segment_distances_from_n0[node_] - nodes_in_segment_distances_from_n0[node_before_])
+                    position_new_ = p_n_b_ + (p_n_ - p_n_b_) * proportion_
+                    radius_new_ = graph.nodes[node_before_]["r"] + (graph.nodes[node_]["r"] - graph.nodes[node_before_]["r"]) * proportion_
+                    # Add the node to the graph and to the list to then connect
+                    while (str(node_id_counter) in graph_new.nodes) or (str(node_id_counter) in untouchable_node_ids):
+                        # make sure no new nodes have the same id
+                        node_id_counter += 1
+                    node_features = SimpleCenterlineNode()
+                    node_features.setVertex(position_new_)
+                    node_features["r"] = radius_new_
+                    node_features["t"] = 0.0
+                    node_features["topology_class"] = ArteryPointTopologyClass.SEGMENT
+                    node_features["arterial_tree"] = graph.nodes[node_before_]["arterial_tree"]
+                    graph_new.add_node(str(node_id_counter), **node_features)
+                    nodes_ids_to_connect_in_sequence_list.append(str(node_id_counter))
                 # Add the last node
-                if n1 not in graph_new.nodes:
+                if not n1 in graph_new.nodes:
                     graph_new.add_node(n1, **graph.nodes[n1])
-                nodes_to_connect_in_sequence_list.append(n1)
+                nodes_ids_to_connect_in_sequence_list.append(n1)
+                # Connect the nodes
+                for i in range(len(nodes_ids_to_connect_in_sequence_list) - 1):
+                    n0 = nodes_ids_to_connect_in_sequence_list[i]
+                    n1 = nodes_ids_to_connect_in_sequence_list[i + 1]
+                    if not graph_new.has_edge(n0, n1):
+                        edge_features = BasicEdge()
+                        n0_p = numpy.array([graph_new.nodes[n0]["x"], graph_new.nodes[n0]["y"], graph_new.nodes[n0]["z"]])
+                        n1_p = numpy.array([graph_new.nodes[n1]["x"], graph_new.nodes[n1]["y"], graph_new.nodes[n1]["z"]])
+                        edge_features["euclidean_distance"] = numpy.linalg.norm(n0_p - n1_p)
+                        edge_features.updateWeightFromEuclideanDistance()
+                        graph_new.add_edge(n0, n1, **edge_features)
+        return graph_new
 
-        return graph_new                
 
 
-
-            
-        
 
 
 ############################
@@ -494,11 +528,18 @@ if __name__ == "__main__":
     f_prova = "C:\\Users\\lecca\\Desktop\\AAMIASoftwares-research\\Data\\CAT08\\CenterlineGraphs_FromReference\\dataset00.GML"
     g_ = loadGraph(f_prova)
     segments = BasicCenterlineGraph.get_anatomic_segments_ids(g_)
-    print(segments)
     
+    # Get the anatomic subgraph
     subgraph = BasicCenterlineGraph.get_anatomic_subgraph(g_)
     from ..draw.draw import drawCenterlinesGraph2D
-    drawCenterlinesGraph2D(subgraph)
+    #drawCenterlinesGraph2D(subgraph)
+
+    # Resample the graph
+    reampled_graph = BasicCenterlineGraph.resample_coronary_artery_tree(
+        graph=g_,
+        mm_between_nodes=1.5
+    )
+    drawCenterlinesGraph2D(reampled_graph)
 
 
     
