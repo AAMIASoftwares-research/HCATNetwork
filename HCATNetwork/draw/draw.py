@@ -809,12 +809,14 @@ class BasicCenterlineGraphInteractiveDrawer():
         """
         if self.node_highlighted_id is None:
             return
-        # Define how many jumps to do depending on the scroll intensity and on the zoom level
+        # Define how many jumps to do depending on the scroll intensity, number of total nodes
+        # and on the zoom level
+        n_jumps_max = int( max([min([40, self.graph.number_of_nodes()/500]), 1]) )
         threshold_zoom_ = 15 # mm
         zoom_ = min([(self.ax.get_xlim()[1] - self.ax.get_xlim()[0]), (self.ax.get_ylim()[1] - self.ax.get_ylim()[0])])
         n_jumps = int(
             min(
-                [40, abs(event.step) * 0.5 * zoom_]
+                [n_jumps_max, abs(event.step) * 0.5 * zoom_]
             )
         ) if zoom_ > threshold_zoom_ else 1
         # Get the node's neighbors

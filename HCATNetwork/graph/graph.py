@@ -419,6 +419,9 @@ class BasicCenterlineGraph(CoreDict):
         graph_new = networkx.Graph(**graph.graph)
         # Get the anatomic segments of the original graph
         segments = BasicCenterlineGraph.get_anatomic_segments_ids(graph)
+        # - consider each segment only once, needed for patients with non-disjointed left and right trees
+        # - we do not want to resample the same segment twice
+        segments = list(set(segments)) 
         untouchable_node_ids = [a for (a,b) in segments] + [b for (a,b) in segments]
         # Resample each segment
         node_id_counter = 0
@@ -532,12 +535,12 @@ if __name__ == "__main__":
     # Get the anatomic subgraph
     subgraph = BasicCenterlineGraph.get_anatomic_subgraph(g_)
     from ..draw.draw import drawCenterlinesGraph2D
-    #drawCenterlinesGraph2D(subgraph)
+    drawCenterlinesGraph2D(subgraph)
 
     # Resample the graph
     reampled_graph = BasicCenterlineGraph.resample_coronary_artery_tree(
         graph=g_,
-        mm_between_nodes=1.5
+        mm_between_nodes=0.5
     )
     drawCenterlinesGraph2D(reampled_graph)
 
