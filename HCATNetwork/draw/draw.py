@@ -954,6 +954,16 @@ def drawCenterlinesGraph2D(graph: networkx.Graph, backend: str = "hcatnetwork"):
             width=0.4,
             ax=ax
         )
+        # plot points of interest above the graph
+        special_nodes_id = [n for n in graph.nodes if (graph.degree[n] == 1 or graph.degree[n] > 2)]
+        special_nodes_id_plot = [i for i,n in enumerate(graph.nodes) if n in special_nodes_id]
+        ax.scatter(
+            x = [node_pos[n_id][0] for n_id in special_nodes_id],
+            y = [node_pos[n_id][1] for n_id in special_nodes_id],
+            c = [node_color[i] for i in special_nodes_id_plot],
+            s = 1.2*node_size[special_nodes_id_plot],
+            zorder=10**6
+        )
     elif backend == "debug":
         #############
         # NETWORKX
