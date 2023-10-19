@@ -874,12 +874,12 @@ def drawCenterlinesGraph2D(graph: networkx.Graph, backend: str = "hcatnetwork"):
             nodes: HCATNetwork.node.SimpleCenterlineNode
             edges: HCATNetwork.edge.BasicEdge
             graph: HCATNetwork.graph.BasicCenterlineGraph
-    backend : str, optional = ["hcatnetwork", "networkx"]
-        The backend to use for drawing. The default is "hcatnetwork",
-        which uses the HCATNetwork library to draw the graph interactively.
-        Its backend is matplotlib.
-        The other option is "networkx", which uses the networkx library to draw the graph
-        in a simpler way (no interactivity). Its backend is matplotlib.
+    backend : str, optional = ["hcatnetwork", "networkx", "debug"]
+        The backend to use for drawing. 
+            "hcatnetwork": uses the HCATNetwork library to draw the graph interactively. Its backend is matplotlib.
+            "networkx": uses the networkx library to draw the graph in a simpler way (no interactivity). Its backend is matplotlib.
+            "debug": uses networkx to draw the graph making no assumptions on the nature of each node and edge.
+            nodes are color-coded on the degree of their connection. Its backend is matplotlib.
     """
     # Figure
     fig, ax = plt.subplots(
@@ -910,16 +910,86 @@ def drawCenterlinesGraph2D(graph: networkx.Graph, backend: str = "hcatnetwork"):
     ax.set_title(graph.graph["image_id"])
     # Content
     if backend == "hcatnetwork" or backend == None:
+        #############
+        # HCATNETWORK
+        #############
         drawer = BasicCenterlineGraphInteractiveDrawer(fig, ax, graph)
     elif backend == "networkx":
+        #############
+        # NETWORKX
+        # NICE
+        #############
+        node_pos = {n_id: [n['x'],n['y']] for n_id, n in zip(graph.nodes(), graph.nodes.values())}
+        node_size = 4*numpy.pi*numpy.array([n["r"] for n in graph.nodes.values()])*2
+        node_color = ["" for n in graph.nodes]
+        for i, n in enumerate(graph.nodes.values()):
+            # tree
+            if n["arterial_tree"].value == ArteryPointTree.LEFT.value:
+                node_color[i] = NODE_FACECOLOR_LCA
+            elif n["arterial_tree"].value == ArteryPointTree.RIGHT.value:
+                node_color[i] = NODE_FACECOLOR_RCA
+            elif n["arterial_tree"].value == ArteryPointTree.RL.value:
+                node_color[i] = NODE_FACECOLOR_LR
+            else:
+                node_color[i] = NODE_FACECOLOR_DEFAULT
+            # Topography
+            if n["topology_class"].value == ArteryPointTopologyClass.OSTIUM.value:
+                node_color[i] = NODE_EDGEECOLOR_START
+            elif n["topology_class"].value == ArteryPointTopologyClass.ENDPOINT.value:
+                node_color[i] = NODE_EDGEECOLOR_END
+            elif n["topology_class"].value == ArteryPointTopologyClass.INTERSECTION.value:
+                node_color[i] = NODE_EDGEECOLOR_CROSS
+        node_color = numpy.array(node_color)
+        node_edge_width = numpy.zeros((graph.number_of_nodes(),))
         networkx.draw_networkx(
-            graph,
-            pos=numpy.array([[n['x'],n['y']] for n in graph.nodes.values()]),
-            ax=ax,
-            node_size=20,
+            G=graph,
+            # nodes
+            pos=node_pos,
+            node_size=node_size,
+            node_color=node_color,
+            linewidths=node_edge_width,
+            with_labels=False,
+            # edges
             edge_color=EDGE_FACECOLOR_DEFAULT,
             width=0.4,
-            with_labels=False
+            ax=ax
+        )
+    elif backend == "debug":
+        #############
+        # NETWORKX
+        # NO ASSUMPTIONS
+        #############
+        node_pos = {n_id: [n['x'],n['y']] for n_id, n in zip(graph.nodes(), graph.nodes.values())}
+        node_size = 4*numpy.pi*numpy.array([n["r"] for n in graph.nodes.values()])*2
+        for i, n in enumerate(graph.nodes):
+            if graph.degree[n] == 1 or graph.degree[n] > 2:
+                node_size[i] = 5*node_size[i]
+        node_color = ["" for n in graph.nodes]
+        for i, n in enumerate(graph.nodes):
+            # Here, color is solely based on the property of the node
+            # meaning how many connection does the node has
+            if graph.degree[n] == 1:
+                node_color[i] = NODE_EDGEECOLOR_END
+            elif graph.degree[n] == 2:
+                node_color[i] = NODE_FACECOLOR_DEFAULT
+            elif graph.degree[n] > 2:
+                node_color[i] = NODE_EDGEECOLOR_CROSS
+            else:
+                node_color[i] = "#000000"
+        node_color = numpy.array(node_color)
+        node_edge_width = numpy.zeros((graph.number_of_nodes(),))
+        networkx.draw_networkx(
+            G=graph,
+            # nodes
+            pos=node_pos,
+            node_size=node_size,
+            node_color=node_color,
+            linewidths=node_edge_width,
+            with_labels=False,
+            # edges
+            edge_color=EDGE_FACECOLOR_DEFAULT,
+            width=0.5,
+            ax=ax
         )
     else:
         raise ValueError(f"Backend {backend} not supported.")
@@ -934,7 +1004,8 @@ def drawCenterlinesGraph2D(graph: networkx.Graph, backend: str = "hcatnetwork"):
 
 
 def drawCenterlinesGraph3D(graph):
-    """Assumes this kind on dictionaries:
+    """ NOT READY YET, DO NOT USE
+    Assumes this kind on dictionaries:
         nodes: HCATNetwork.node.SimpleCenterlineNode
         edges: HCATNetwork.edge.BasicEdge
         graph: HCATNetwork.graph.BasicCenterlineGraph
@@ -1030,4 +1101,6 @@ if __name__ == "__main__":
     from ..graph import loadGraph
     g_ = loadGraph(f_prova)
     drawCenterlinesGraph2D(graph=g_)
+    drawCenterlinesGraph2D(graph=g_, backend="networkx")
+    drawCenterlinesGraph2D(graph=g_, backend="debug")
     #drawCenterlinesGraph3D(graph=g_)
