@@ -12,14 +12,11 @@ and use: python -m HCATNetwork.graph-o-shop_2D
 import os, sys, time
 import numpy, networkx
 # imports - plotting
+import matplotlib
 import matplotlib.pyplot as plt
-from matplotlib.lines import Line2D
-from matplotlib.collections import LineCollection
-from mpl_toolkits.mplot3d.art3d import Line3DCollection
-from matplotlib.backend_bases import Event
-from matplotlib.backend_bases import MouseButton
+import mpl_toolkits
 # imports - gui
-
+import PyQt6.QtGui
 # imports - my modules
 from .node import SimpleCenterlineNode, ArteryPointTopologyClass, ArteryPointTree
 from .edge import BasicEdge
@@ -30,26 +27,4 @@ from .draw.styles import (NODE_FACECOLOR_LCA, NODE_FACECOLOR_RCA, NODE_EDGEECOLO
 
 
 if __name__ == "__main__":
-    # place points on the canvas when the mouse left-clicks
-    x = numpy.random.rand(10)
-    y = numpy.random.rand(10)
-    fig, ax = plt.subplots()
-    def on_mouse_click_event(event: Event):
-        if event.button is MouseButton.LEFT:
-            if not event.inaxes:
-                return
-            x, y = event.xdata, event.ydata
-            event.inaxes.scatter(x, y, c="red")
-            event.canvas.draw_idle()
-    fig.canvas.mpl_connect('button_press_event', on_mouse_click_event)
-    ax.scatter(x, y)
-    plt.show()
-
-    # connect two points on the canvas when clicked sequentially
-
-    x = numpy.random.rand(10)
-    y = numpy.random.rand(10)
-    fig, ax = plt.subplots()
-    ax.scatter(x, y)
-    plt.show()
-
+    # mm
