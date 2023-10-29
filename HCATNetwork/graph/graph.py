@@ -27,6 +27,7 @@ import networkx
 from ..core.core import CoreDict
 from ..node.node import SimpleCenterlineNode, ArteryPointTopologyClass, ArteryPointTree
 from ..edge.edge import BasicEdge
+from ..utils.slicer import numpy_array_to_open_curve_json, numpy_array_to_fiducials_json
 
 ###################################
 # LOADING and SAVING to text files
@@ -529,31 +530,80 @@ class BasicCenterlineGraph(CoreDict):
             except:
                 raise FileNotFoundError(f"Directory {save_directory} does not exist and cannot be created.")
         # Cycle through all endpoints
-        left_counter, right_counter = 0, 0
         for n in graph.nodes:
             if graph.nodes[n]['topology_class'] == ArteryPointTopologyClass.ENDPOINT:
+                endpoint_node_id = n
                 # get coronary ostium node id that is connected to this endpoint
-                ostia_node_id = BasicCenterlineGraph.getCoronaryOstiumNodeIdRelativeToNode(graph, n)
+                ostia_node_id = BasicCenterlineGraph.getCoronaryOstiumNodeIdRelativeToNode(graph, endpoint_node_id)
                 for ostium_node_id in ostia_node_id:
                     # continue if the returned ostium is None
                     if ostia_node_id is None:
                         continue
                     # get the path from ostium to endpoint
-                    path = networkx.algorithms.shortest_path(graph, ostium_node_id, n)
-                    # create the 3D Slicer open curve file
-                    ######################################################
+                    path = networkx.algorithms.shortest_path(graph, ostium_node_id, endpoint_node_id)
+                    # create the 3D Slicer open curve file content in json format
+                    arr_ = numpy.array(
+                        [[graph.nodes[n]['x'], graph.nodes[n]['y'], graph.nodes[n]['z']] for n in path]
+                    )
+                    labels_ = [n for n in path]
+                    descriptions_ = [f"{graph.nodes[n]['arterial_tree'].name} {graph.nodes[n]['topology_class'].name}" for n in path]
+                    file_content_str = numpy_array_to_open_curve_json(arr_, labels_, descriptions_)
                     # create the file
                     if graph.nodes[ostium_node_id]['arterial_tree'] == ArteryPointTree.LEFT:
                         tree = "left"
-                        left_counter += 1
                     if graph.nodes[ostium_node_id]['arterial_tree'] == ArteryPointTree.RIGHT:
                         tree = "right"
-                        right_counter += 1
-                    f_name = f"{tree}_arterial_segment_{ostium_node_id}_{n}.json"
+                    f_name = f"{tree}_arterial_segment_{ostium_node_id}_to_{endpoint_node_id}.SlicerOpenCurve.mkr.json"
                     f_path = os.path.join(save_directory, f_name)
                     f = open(f_path, "w")
                     # write the file
-                    ##########################################################
+                    f.write(file_content_str)
+                    f.close()
+
+    @staticmethod
+    def convert_to_3dslicer_fiducials(graph: networkx.classes.graph.Graph, save_filename: str) -> None:
+        """This function converts the whole graph into a fiducial object ( a list of markers)
+        that can be loaded directly in 3D Slicer.
+        
+        Parameters
+        ----------
+        graph : networkx.classes.graph.Graph
+            The graph to be converted.
+        save_filename : str
+            The file where the fiducials will be saved.
+            It must end with ".SlicerFiducial.mkr.json", else everything after the first "." will be replaced by
+            the correct extension.
+        
+        Raises
+        ------
+        FileNotFoundError
+            If the save_filename does not exist or cannot be created.
+        """
+        # Directory handling
+        dir_, f_ = os.path.split(save_filename)
+        if not os.path.exists(dir_):
+            try:
+                os.mkdir(dir_)
+            except:
+                raise FileNotFoundError(f"Directory {dir_} does not exist and cannot be created.")
+        # Handle file name
+        if not f_.endswith(".SlicerFiducial.mkr.json"):
+            f_ = f_.split(".")[0]
+            f_ += ".SlicerFiducial.mkr.json"
+            save_filename = os.path.join(dir_, f_)
+        # Create the 3D Slicer fiducials file content in json format
+        arr_ = numpy.array(
+            [[graph.nodes[n]['x'], graph.nodes[n]['y'], graph.nodes[n]['z']] for n in graph.nodes]
+        )
+        labels_ = [n for n in graph.nodes]
+        descriptions_ = [f"{graph.nodes[n]['arterial_tree'].name} {graph.nodes[n]['topology_class'].name}" for n in graph.nodes]
+        file_content_str = numpy_array_to_fiducials_json(arr_, labels_, descriptions_)
+        # create and write the file
+        f = open(save_filename, "w")
+        f.write(file_content_str)
+        f.close()
+                    
+                    
 
 
 
@@ -620,5 +670,12 @@ if __name__ == "__main__":
             graph=g_,
             save_directory="C:\\Users\\lecca\\Desktop\\test__slicer_hcatnetwork"
         )
+    # Convert to 3D Slicer fiducials
+    if 1:
+        BasicCenterlineGraph.convert_to_3dslicer_fiducials(
+            graph=g_,
+            save_directory="C:\\Users\\lecca\\Desktop\\test__slicer_hcatnetwork\\fiducials_"+g_["image_id"]+"_.ext"
+        )
+    
 
     
