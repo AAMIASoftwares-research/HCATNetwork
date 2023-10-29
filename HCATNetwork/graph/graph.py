@@ -503,6 +503,61 @@ class BasicCenterlineGraph(CoreDict):
                         edge_features.updateWeightFromEuclideanDistance()
                         graph_new.add_edge(n0, n1, **edge_features)
         return graph_new
+    
+    @staticmethod
+    def convert_to_3dslicer_opencurve(graph: networkx.classes.graph.Graph, save_directory: str) -> None:
+        """This function converts each segment, from ostium to endpoint, into an open curve
+        that can be loaded directly in 3D Slicer.
+        
+        Parameters
+        ----------
+        graph : networkx.classes.graph.Graph
+            The graph to be converted.
+        save_directory : str
+            The directory where the curves will be saved.
+            If the directory is just a name, it will be created inside the current working directory.
+        
+        Raises
+        ------
+        FileNotFoundError
+            If the save_directory does not exist or cannot be created.
+        """
+        # Directory handling
+        if not os.path.exists(save_directory):
+            try:
+                os.mkdir(save_directory)
+            except:
+                raise FileNotFoundError(f"Directory {save_directory} does not exist and cannot be created.")
+        # Cycle through all endpoints
+        left_counter, right_counter = 0, 0
+        for n in graph.nodes:
+            if graph.nodes[n]['topology_class'] == ArteryPointTopologyClass.ENDPOINT:
+                # get coronary ostium node id that is connected to this endpoint
+                ostia_node_id = BasicCenterlineGraph.getCoronaryOstiumNodeIdRelativeToNode(graph, n)
+                for ostium_node_id in ostia_node_id:
+                    # continue if the returned ostium is None
+                    if ostia_node_id is None:
+                        continue
+                    # get the path from ostium to endpoint
+                    path = networkx.algorithms.shortest_path(graph, ostium_node_id, n)
+                    # create the 3D Slicer open curve file
+                    ######################################################
+                    # create the file
+                    if graph.nodes[ostium_node_id]['arterial_tree'] == ArteryPointTree.LEFT:
+                        tree = "left"
+                        left_counter += 1
+                    if graph.nodes[ostium_node_id]['arterial_tree'] == ArteryPointTree.RIGHT:
+                        tree = "right"
+                        right_counter += 1
+                    f_name = f"{tree}_arterial_segment_{ostium_node_id}_{n}.json"
+                    f_path = os.path.join(save_directory, f_name)
+                    f = open(f_path, "w")
+                    # write the file
+                    ##########################################################
+
+
+
+
 
 
 
@@ -524,25 +579,46 @@ class HeartDominance(Enum):
     RIGHT= auto()
     CODOMINANT = auto()
 
+
+
+
+
+
+##################
+##################
+##################
+
 if __name__ == "__main__":
     print("Running 'HCATNetwork.graph' module")
     
     # Load a coronary artery tree graph
+    from ..draw.draw import drawCenterlinesGraph2D
     f_prova = "C:\\Users\\lecca\\Desktop\\AAMIASoftwares-research\\Data\\CAT08\\CenterlineGraphs_FromReference\\dataset00.GML"
     g_ = loadGraph(f_prova)
-    segments = BasicCenterlineGraph.get_anatomic_segments_ids(g_)
+    
+    # Get the anatomic segments
+    if 0:
+        segments = BasicCenterlineGraph.get_anatomic_segments_ids(g_)
+        drawCenterlinesGraph2D(segments)
     
     # Get the anatomic subgraph
-    subgraph = BasicCenterlineGraph.get_anatomic_subgraph(g_)
-    from ..draw.draw import drawCenterlinesGraph2D
-    drawCenterlinesGraph2D(subgraph)
+    if 0:
+        subgraph = BasicCenterlineGraph.get_anatomic_subgraph(g_)
+        drawCenterlinesGraph2D(subgraph)
 
     # Resample the graph
-    reampled_graph = BasicCenterlineGraph.resample_coronary_artery_tree(
-        graph=g_,
-        mm_between_nodes=0.5
-    )
-    drawCenterlinesGraph2D(reampled_graph)
+    if 0:
+        reampled_graph = BasicCenterlineGraph.resample_coronary_artery_tree(
+            graph=g_,
+            mm_between_nodes=0.5
+        )
+        drawCenterlinesGraph2D(reampled_graph)
 
+    # Convert to 3D Slicer open curve
+    if 1:
+        BasicCenterlineGraph.convert_to_3dslicer_opencurve(
+            graph=g_,
+            save_directory="C:\\Users\\lecca\\Desktop\\test__slicer_hcatnetwork"
+        )
 
     
