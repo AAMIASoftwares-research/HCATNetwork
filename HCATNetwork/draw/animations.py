@@ -10,7 +10,7 @@ from matplotlib.animation import FuncAnimation
 
 from ..node import ArteryPointTopologyClass
 from ..graph import BasicCenterlineGraph
-from ..graph import loadGraph
+from ..graph import load_graph
 
 
 ##########################
@@ -91,7 +91,7 @@ if __name__ == "__main__":
     from matplotlib.collections import CircleCollection
 
     
-    graph = loadGraph(F_PROVA)
+    graph = load_graph(F_PROVA)
     graph = BasicCenterlineGraph.resample_coronary_artery_tree(graph, 0.5)
     ostia = BasicCenterlineGraph.get_coronary_ostia_node_id(graph)
     shortest_path_lengths_from_ostia = networkx.shortest_path_length(graph, ostia[0])

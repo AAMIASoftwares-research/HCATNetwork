@@ -74,9 +74,9 @@ if __name__ == "__main__":
     # save graph in a standard format
     import graph
     path = "C:\\Users\\lecca\\Desktop\\AAMIASoftwares-research\\HCATNetwork\\HCATNetwork\\test\\prova_grafo.GML"
-    graph.saveGraph(G, path)
+    graph.save_graph(G, path)
     print("####\n####\n####", G.nodes.data(), "\n", type(G), "####\n####\n####")
-    Gnew = graph.loadGraph(path)
+    Gnew = graph.load_graph(path)
     print(Gnew.nodes.data(), "\n", type(Gnew), "####\n####\n####")
 
 

@@ -654,7 +654,7 @@ class BasicCenterlineGraphInteractiveDrawer():
         elif node['topology_class'].value == ArteryPointTopologyClass.ENDPOINT.value:
             annotation_text += f"Branch endpoint\n"
         # - distance from ostium/ostia
-        ostia = BasicCenterlineGraph.getCoronaryOstiumNodeIdRelativeToNode(graph=self.graph, node_id=node_id)
+        ostia = BasicCenterlineGraph.get_relative_coronary_ostia_node_id(graph=self.graph, node_id=node_id)
         if len(ostia) == 1:
             distance = networkx.shortest_path_length(self.graph, source=ostia[0], target=node_id, weight="euclidean_distance")
             annotation_text += f"Distance from ostium:\n{distance: 8.3f} mm"
@@ -1108,8 +1108,8 @@ def drawCenterlinesGraph3D(graph):
 
 if __name__ == "__main__":
     f_prova = "C:\\Users\\lecca\\Desktop\\AAMIASoftwares-research\\Data\\CAT08\\CenterlineGraphs_FromReference\\dataset00.GML"
-    from ..graph import loadGraph
-    g_ = loadGraph(f_prova)
+    from ..graph import load_graph
+    g_ = load_graph(f_prova)
     drawCenterlinesGraph2D(graph=g_)
     drawCenterlinesGraph2D(graph=g_, backend="networkx")
     drawCenterlinesGraph2D(graph=g_, backend="debug")
