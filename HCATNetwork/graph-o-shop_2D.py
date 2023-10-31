@@ -5,7 +5,7 @@ https://matplotlib.org/stable/users/explain/figure/event_handling.html
 https://matplotlib.org/stable/gallery/event_handling/poly_editor.html
 
 To run as a module, activate the venv, go inside the HCATNetwork parent directory,
-and use: python -m HCATNetwork.graph-o-shop_2D
+and use: python -m hcatnetwork.graph-o-shop_2D
 """
 
 # imports - system
@@ -18,8 +18,8 @@ import mpl_toolkits
 # imports - gui
 import PyQt6.QtGui
 # imports - my modules
-from .node import SimpleCenterlineNode, ArteryPointTopologyClass, ArteryPointTree
-from .edge import SimpleCenterlineEdge
+from .node import SimpleCenterlineNodeFeatures, ArteryNodeTopology, ArteryNodeSide
+from .edge import SimpleCenterlineEdgeFeatures
 from .draw.styles import (NODE_FACECOLOR_LCA, NODE_FACECOLOR_RCA, NODE_EDGEECOLOR_DEFAULT, 
                           NODE_EDGEECOLOR_END, NODE_EDGEECOLOR_CROSS, NODE_EDGEECOLOR_START, 
                           EDGE_FACECOLOR_DEFAULT)

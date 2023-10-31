@@ -27,8 +27,8 @@ import numpy
 import networkx
 
 from ..core.core import CoreDict
-from ..node.node import SimpleCenterlineNode, ArteryPointTopologyClass, ArteryPointTree
-from ..edge.edge import SimpleCenterlineEdge
+from ..node.node import SimpleCenterlineNodeFeatures, ArteryNodeTopology, ArteryNodeSide
+from ..edge.edge import SimpleCenterlineEdgeFeatures
 from ..utils.slicer import numpy_array_to_open_curve_json, numpy_array_to_fiducials_json
 
 ###################################
@@ -92,15 +92,15 @@ def save_graph(
                     node_features_conversion_k.append(k)
                     node_features_conversion_v.append("list")
                 n[k] = json.dumps(n[k])
-            if isinstance(n[k], ArteryPointTopologyClass):
+            if isinstance(n[k], ArteryNodeTopology):
                 if not k in node_features_conversion_k:
                     node_features_conversion_k.append(k)
-                    node_features_conversion_v.append("HCATNetwork.node.ArteryPointTopologyClass")
+                    node_features_conversion_v.append("HCATNetwork.node.ArteryNodeTopology")
                 n[k] = str(n[k].name)
-            if isinstance(n[k], ArteryPointTree):
+            if isinstance(n[k], ArteryNodeSide):
                 if not k in node_features_conversion_k:
                     node_features_conversion_k.append(k)
-                    node_features_conversion_v.append("HCATNetwork.node.ArteryPointTree")
+                    node_features_conversion_v.append("HCATNetwork.node.ArteryNodeSide")
                 n[k] = str(n[k].name)
     node_features_conversion_dict = {k: v for k, v in zip(node_features_conversion_k, node_features_conversion_v)}
     # Convert any edge data into a json string
@@ -181,10 +181,10 @@ def load_graph(file_path: str, graph_type: type | None = None) -> networkx.class
                             n[k] = numpy.array(json.loads(n[k]))
                         elif graph.graph["node_features_conversion_dict"][k] == "list":
                             n[k] = json.loads(n[k])
-                        elif graph.graph["node_features_conversion_dict"][k] == "HCATNetwork.node.ArteryPointTopologyClass":
-                            n[k] = load_enums(n, k, ArteryPointTopologyClass)
-                        elif graph.graph["node_features_conversion_dict"][k] == "HCATNetwork.node.ArteryPointTree":
-                            n[k] = load_enums(n, k, ArteryPointTree)
+                        elif graph.graph["node_features_conversion_dict"][k] == "HCATNetwork.node.ArteryNodeTopology":
+                            n[k] = load_enums(n, k, ArteryNodeTopology)
+                        elif graph.graph["node_features_conversion_dict"][k] == "HCATNetwork.node.ArteryNodeSide":
+                            n[k] = load_enums(n, k, ArteryNodeSide)
         del graph.graph["node_features_conversion_dict"]
     # Edge data
     if "edge_features_conversion_dict" in graph.graph:
@@ -221,8 +221,8 @@ class SimpleCenterlineGraph(CoreDict):
     """The basic centerline graph static dictionary.
 
     There is no way of hard-imposing it in python, but the graph should contain:
-        * nodes of type HCATNetwork.node.SimpleCenterlineNode,
-        * edges of type HCATNetwork.edge.SimpleCenterlineEdge.
+        * nodes of type HCATNetwork.node.SimpleCenterlineNodeFeatures,
+        * edges of type HCATNetwork.edge.SimpleCenterlineEdgeFeatures.
 
     Both trees (left and right) are stored in the same NetworkX.Graph structure.
     In some patients, it could happen that the left and right subgraphs are not disjointed, hence the need to have just one graph.
@@ -256,25 +256,25 @@ class SimpleCenterlineGraph(CoreDict):
             raise ValueError(f"Node with id \"{node_id}\" is not in graph.")
         node = graph.nodes[node_id]
         # Node is a coronary ostium
-        if node['topology_class'].value == ArteryPointTopologyClass.OSTIUM.value:
+        if node['topology_class'].value == ArteryNodeTopology.OSTIUM.value:
             return tuple([node_id])
         # Node is not a coronary ostium
         # The node could be associated with either one or both arterial trees.
         # There should be no nodes asssociated with no artrial trees.
-        if node['arterial_tree'].value != ArteryPointTree.RL.value:
+        if node['arterial_tree'].value != ArteryNodeSide.RL.value:
             # The node is associated with a single tree
             for n in graph.nodes:
-                if graph.nodes[n]['arterial_tree'].value == node['arterial_tree'].value and graph.nodes[n]['topology_class'].value == ArteryPointTopologyClass.OSTIUM.value:
+                if graph.nodes[n]['arterial_tree'].value == node['arterial_tree'].value and graph.nodes[n]['topology_class'].value == ArteryNodeTopology.OSTIUM.value:
                     return tuple([n])
         else:
             # The node is associated with both arterial trees
             count_hits_ = 0
             left_ostium_n, right_ostium_n = None, None
             for n in graph.nodes:
-                if graph.nodes[n]['topology_class'].value == ArteryPointTopologyClass.OSTIUM.value:
-                    if graph.nodes[n]['arterial_tree'].value == ArteryPointTree.LEFT.value:
+                if graph.nodes[n]['topology_class'].value == ArteryNodeTopology.OSTIUM.value:
+                    if graph.nodes[n]['arterial_tree'].value == ArteryNodeSide.LEFT.value:
                         left_ostium_n = n
-                    elif graph.nodes[n]['arterial_tree'].value == ArteryPointTree.RIGHT.value:
+                    elif graph.nodes[n]['arterial_tree'].value == ArteryNodeSide.RIGHT.value:
                         right_ostium_n = n
                     else:
                         raise RuntimeError(f"Node {n} is a coronary ostium associated with no arterial tree (nor left, nor right).")
@@ -293,10 +293,10 @@ class SimpleCenterlineGraph(CoreDict):
         count_hits_ = 0
         left_ostium_n, right_ostium_n = None, None
         for n in graph.nodes:
-            if graph.nodes[n]['topology_class'].value == ArteryPointTopologyClass.OSTIUM.value:
-                if graph.nodes[n]['arterial_tree'].value == ArteryPointTree.LEFT.value:
+            if graph.nodes[n]['topology_class'].value == ArteryNodeTopology.OSTIUM.value:
+                if graph.nodes[n]['arterial_tree'].value == ArteryNodeSide.LEFT.value:
                     left_ostium_n = n
-                elif graph.nodes[n]['arterial_tree'].value == ArteryPointTree.RIGHT.value:
+                elif graph.nodes[n]['arterial_tree'].value == ArteryNodeSide.RIGHT.value:
                     right_ostium_n = n
                 else:
                     raise RuntimeError(f"Node {n} is a coronary ostium associated with no arterial tree (nor left, nor right).")
@@ -391,7 +391,7 @@ class SimpleCenterlineGraph(CoreDict):
                 subgraph.add_node(segment[1], **graph.nodes[segment[1]])
         # Add the edges
         for segment in segments:
-            edge_features = SimpleCenterlineEdge()
+            edge_features = SimpleCenterlineEdgeFeatures()
             edge_features["euclidean_distance"] = networkx.algorithms.shortest_path_length(graph, segment[0], segment[1], weight="euclidean_distance")
             edge_features.update_weight_from_euclidean_distance()
             subgraph.add_edge(segment[0], segment[1], **edge_features)
@@ -445,7 +445,7 @@ class SimpleCenterlineGraph(CoreDict):
                 # Add the edge
                 # Here, the edge's property "euclidean_distance" is the actual distance between the nodes.
                 if not graph_new.has_edge(n0, n1):
-                    edge_features = SimpleCenterlineEdge()
+                    edge_features = SimpleCenterlineEdgeFeatures()
                     n0_p = numpy.array([graph.nodes[n0]["x"], graph.nodes[n0]["y"], graph.nodes[n0]["z"]])
                     n1_p = numpy.array([graph.nodes[n1]["x"], graph.nodes[n1]["y"], graph.nodes[n1]["z"]])
                     edge_features["euclidean_distance"] = numpy.linalg.norm(n0_p - n1_p)
@@ -482,11 +482,11 @@ class SimpleCenterlineGraph(CoreDict):
                     while (str(node_id_counter) in graph_new.nodes) or (str(node_id_counter) in untouchable_node_ids):
                         # make sure no new nodes have the same id
                         node_id_counter += 1
-                    node_features = SimpleCenterlineNode()
+                    node_features = SimpleCenterlineNodeFeatures()
                     node_features.set_vertex(position_new_)
                     node_features["r"] = radius_new_
                     node_features["t"] = 0.0
-                    node_features["topology_class"] = ArteryPointTopologyClass.SEGMENT
+                    node_features["topology_class"] = ArteryNodeTopology.SEGMENT
                     node_features["arterial_tree"] = graph.nodes[node_before_]["arterial_tree"]
                     graph_new.add_node(str(node_id_counter), **node_features)
                     nodes_ids_to_connect_in_sequence_list.append(str(node_id_counter))
@@ -499,7 +499,7 @@ class SimpleCenterlineGraph(CoreDict):
                     n0 = nodes_ids_to_connect_in_sequence_list[i]
                     n1 = nodes_ids_to_connect_in_sequence_list[i + 1]
                     if not graph_new.has_edge(n0, n1):
-                        edge_features = SimpleCenterlineEdge()
+                        edge_features = SimpleCenterlineEdgeFeatures()
                         n0_p = numpy.array([graph_new.nodes[n0]["x"], graph_new.nodes[n0]["y"], graph_new.nodes[n0]["z"]])
                         n1_p = numpy.array([graph_new.nodes[n1]["x"], graph_new.nodes[n1]["y"], graph_new.nodes[n1]["z"]])
                         edge_features["euclidean_distance"] = numpy.linalg.norm(n0_p - n1_p)
@@ -544,7 +544,7 @@ class SimpleCenterlineGraph(CoreDict):
                 raise ValueError(f"Affine transformation matrix must be a 4x4 matrix, not {affine_transformation_matrix.shape}.")
         # Cycle through all endpoints
         for n in graph.nodes:
-            if graph.nodes[n]['topology_class'] == ArteryPointTopologyClass.ENDPOINT:
+            if graph.nodes[n]['topology_class'] == ArteryNodeTopology.ENDPOINT:
                 endpoint_node_id = n
                 # get coronary ostium node id that is connected to this endpoint
                 ostia_node_id = SimpleCenterlineGraph.get_relative_coronary_ostia_node_id(graph, endpoint_node_id)
@@ -568,9 +568,9 @@ class SimpleCenterlineGraph(CoreDict):
                     # - make the json string through this utility function
                     file_content_str = numpy_array_to_open_curve_json(arr_, labels_, descriptions_)
                     # create the file
-                    if graph.nodes[ostium_node_id]['arterial_tree'] == ArteryPointTree.LEFT:
+                    if graph.nodes[ostium_node_id]['arterial_tree'] == ArteryNodeSide.LEFT:
                         tree = "left"
-                    if graph.nodes[ostium_node_id]['arterial_tree'] == ArteryPointTree.RIGHT:
+                    if graph.nodes[ostium_node_id]['arterial_tree'] == ArteryNodeSide.RIGHT:
                         tree = "right"
                     f_name = f"{tree}_arterial_segment_{ostium_node_id}_to_{endpoint_node_id}.SlicerOpenCurve.mkr.json"
                     f_path = os.path.join(save_directory, f_name)

@@ -6,7 +6,7 @@ CoreDict must be the parent class of every node, edge and graph dictionary, as i
 runtime type checking and dict initialisation starting from dictionary keys definitions with types.
 
 To run as a module, activate the venv, go inside the HCATNetwork parent directory,
-and use: python -m HCATNetwork.core.core
+and use: python -m hcatnetwork.core.core
 """
 from collections import UserDict
 

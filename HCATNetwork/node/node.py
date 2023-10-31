@@ -13,8 +13,8 @@ Node ids MUST be strings when creating nodes for NetworkX. They can be floats or
 saving the file, all gets lost. To ensure continuity between a graph created on the fly and another one
 opened from a file, use strings (even better if str(i), where i is an integer).
 
-To run as a module, activate the venv, go inside the HCATNetwork parent directory,
-and use: python -m HCATNetwork.node.node
+To run as a module, activate the venv, go inside the hcatnetwork parent directory,
+and use: python -m hcatnetwork.node.node
 """
 import itertools
 from enum import Enum, auto
@@ -32,7 +32,7 @@ from ..core.core import CoreDict
 """
 A vertex node is a node defined by just its label and x, y, z positions
 """
-class VertexNode(CoreDict):
+class VertexNodeFeatures(CoreDict):
     x: float
     y: float 
     z: float
@@ -76,22 +76,22 @@ with no added complexity.
 - "tree" must be one of the string literals defined in the following enum: ["r", "l", "b"], where "b" stands for "both"
     (there are some heart structures in which the coronary arteries from left and right side branches merge together)
 """
-class ArteryPointTopologyClass(Enum):
+class ArteryNodeTopology(Enum):
     OSTIUM = auto()
     SEGMENT = auto()
     INTERSECTION = auto()
     ENDPOINT = auto()
 
-class ArteryPointTree(Enum):
+class ArteryNodeSide(Enum):
     RIGHT = auto()
     LEFT = auto()
     RL = auto()
 
-class SimpleCenterlineNode(VertexNode):
-    topology_class: ArteryPointTopologyClass
+class SimpleCenterlineNodeFeatures(VertexNodeFeatures):
+    topology_class: ArteryNodeTopology
     t: float
     r: float
-    arterial_tree: ArteryPointTree
+    arterial_tree: ArteryNodeSide
 
     def get_vertex_radius_list(self):
         return self.get_vertex_list().extend(self.__getitem__("r"))
@@ -119,13 +119,13 @@ This is the "most complete" node, with everything that is needed and that might 
 This is the only node actively maintained and that will be used in the future.
 """
 
-class HeartCoronaryArteryNode(CoreDict): # ["this is the most complete dict you can think of"]
+class HeartCoronaryArteryNodeFeatures(CoreDict): # ["this is the most complete dict you can think of"]
     everything: any
 
 if __name__ == "__main__":
-    print("Running 'HCATNetwork.node' module")
-    d = SimpleCenterlineNode()
+    print("Running 'hcatnetwork.node' module")
+    d = SimpleCenterlineNodeFeatures()
     print(d)
 
-    d["arterial_tree"] = ArteryPointTree.RIGHT
+    d["arterial_tree"] = ArteryNodeSide.RIGHT
     print(d, d["arterial_tree"].value)

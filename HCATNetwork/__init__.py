@@ -5,8 +5,10 @@ which defines standard data structures for nodes, edges, and graphs
 It is kinda like a header file with some added functionality, such as graph saving and reading from file.
 
 Access stuff with (example):
-    import HCATNetwork
-    print(HCATNetwork.edge.SimpleCenterlineEdge_KeysList)
+    import hcatnetwork
+    node_features = hcatnetwork.node.SimpleCenterlineNodeFeatures()
+    edge_features = hcatnetwork.edge.SimpleCenterlineEdgeFeatures()
+    graph = hcatnetwork.graph.SimpleCenterlineGraph()
 
 As of now, supported node, edge and graph features include, beside the standard data-types supported by NetworkX and GML file format:
 - nested lists of whatever complexity

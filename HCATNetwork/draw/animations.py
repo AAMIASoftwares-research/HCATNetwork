@@ -8,7 +8,7 @@ import matplotlib
 import matplotlib.pyplot as plt
 from matplotlib.animation import FuncAnimation
 
-from ..node import ArteryPointTopologyClass
+from ..node import ArteryNodeTopology
 from ..graph import SimpleCenterlineGraph
 from ..graph import load_graph
 
@@ -40,7 +40,7 @@ def get_particle_velocity_from_graph(graph: networkx.graph.Graph, shortest_path_
     closest_node_i = dists.argmin()
     closest_node_id = list(graph.nodes)[closest_node_i] if particle_last_closest_node_id is None else neighbours_list_[closest_node_i]   
     # Deal with endpoints
-    if graph.nodes[closest_node_id]["topology_class"].value ==  ArteryPointTopologyClass.ENDPOINT.value:
+    if graph.nodes[closest_node_id]["topology_class"].value ==  ArteryNodeTopology.ENDPOINT.value:
         return (numpy.zeros((3,)), closest_node_id, True) 
     # Find the node pointing to the distal direction
     neighbors = list(graph.neighbors(closest_node_id))

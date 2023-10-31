@@ -16,7 +16,7 @@ The GML file tipe is chosen to hold graph data, as it is widely supported and do
 on insecure python libraries as other do. NetworkX is used as a load/save interface.
 
 To run as a module, activate the venv, go inside the HCATNetwork parent directory,
-and use: python -m HCATNetwork.graph.graph
+and use: python -m hcatnetwork.graph.graph
 """
 from __future__ import annotations
 
@@ -26,8 +26,8 @@ from enum import Enum, auto
 import numpy
 import networkx
 
-from ..node.node import SimpleCenterlineNode, ArteryPointTopologyClass, ArteryPointTree
-from ..edge.edge import SimpleCenterlineEdge
+from ..node.node import SimpleCenterlineNodeFeatures, ArteryNodeTopology, ArteryNodeSide
+from ..edge.edge import SimpleCenterlineEdgeFeatures
 from ..utils.slicer import numpy_array_to_open_curve_json, numpy_array_to_fiducials_json
 
 ###################################
@@ -104,15 +104,15 @@ def save_graph(
                     node_features_conversion_k.append(k)
                     node_features_conversion_v.append("list")
                 n[k] = json.dumps(n[k])
-            if isinstance(n[k], ArteryPointTopologyClass):
+            if isinstance(n[k], ArteryNodeTopology):
                 if not k in node_features_conversion_k:
                     node_features_conversion_k.append(k)
-                    node_features_conversion_v.append("HCATNetwork.node.ArteryPointTopologyClass")
+                    node_features_conversion_v.append("hcatnetwork.node.ArteryNodeTopology")
                 n[k] = str(n[k].name)
-            if isinstance(n[k], ArteryPointTree):
+            if isinstance(n[k], ArteryNodeSide):
                 if not k in node_features_conversion_k:
                     node_features_conversion_k.append(k)
-                    node_features_conversion_v.append("HCATNetwork.node.ArteryPointTree")
+                    node_features_conversion_v.append("hcatnetwork.node.ArteryNodeSide")
                 n[k] = str(n[k].name)
     node_features_conversion_dict = {k: v for k, v in zip(node_features_conversion_k, node_features_conversion_v)}
     # Convert any edge data into a json string
@@ -174,7 +174,7 @@ def save_graph(
         if isinstance(graph.graph[k], HeartDominance):
             if not k in node_features_conversion_k:
                 node_features_conversion_k.append(k)
-                node_features_conversion_v.append("HCATNetwork.node.HeartDominance")
+                node_features_conversion_v.append("hcatnetwork.node.HeartDominance")
             graph.graph[k] = str(n[k].name)
     graph_features_conversion_dict = {k: v for k, v in zip(graph_features_conversion_k, graph_features_conversion_v)}    
     # Save data conversion info
@@ -221,10 +221,10 @@ def load_graph(file_path: str) -> networkx.classes.graph.Graph:
                             graph.nodes[n][k] = numpy.array(json.loads(n[k]))
                         elif graph.graph["node_features_conversion_dict"][k] == "list":
                             graph.nodes[n][k] = json.loads(n[k])
-                        elif graph.graph["node_features_conversion_dict"][k] == "HCATNetwork.node.ArteryPointTopologyClass":
-                            graph.nodes[n][k] = load_enums(graph.nodes[n], k, ArteryPointTopologyClass)
-                        elif graph.graph["node_features_conversion_dict"][k] == "HCATNetwork.node.ArteryPointTree":
-                            graph.nodes[n][k] = load_enums(graph.nodes[n], k, ArteryPointTree)
+                        elif graph.graph["node_features_conversion_dict"][k] == "hcatnetwork.node.ArteryNodeTopology":
+                            graph.nodes[n][k] = load_enums(graph.nodes[n], k, ArteryNodeTopology)
+                        elif graph.graph["node_features_conversion_dict"][k] == "hcatnetwork.node.ArteryNodeSide":
+                            graph.nodes[n][k] = load_enums(graph.nodes[n], k, ArteryNodeSide)
         del graph.graph["node_features_conversion_dict"]
     # Edge data
     if "edge_features_conversion_dict" in graph.graph:
@@ -258,7 +258,7 @@ def load_graph(file_path: str) -> networkx.classes.graph.Graph:
                         graph.graph[k] = numpy.array(json.loads(graph.graph[k]))
                     elif graph.graph["graph_features_conversion_dict"][k] == "list":
                         graph.graph[k] = json.loads(graph.graph[k])
-                    elif graph.graph["node_features_conversion_dict"][k] == "HCATNetwork.node.HeartDominance":
+                    elif graph.graph["node_features_conversion_dict"][k] == "hcatnetwork.node.HeartDominance":
                         graph.graph[k] = load_enums(graph.graph, k, HeartDominance)
         del graph.graph["graph_features_conversion_dict"]
     # Done
@@ -269,14 +269,18 @@ def load_graph(file_path: str) -> networkx.classes.graph.Graph:
 
 ########################
 # Simple Centerline Graph
-########################                 
+########################
+
+class SimpleCenterlineGraphFeatures(CoreDict):
+    image_id: str
+    are_left_right_disjointed: bool
                     
 class SimpleCenterlineGraph(networkx.classes.graph.Graph):
     """The basic centerline graph, child of NetworkX.Graph.
 
     The graph should contain:
-        * nodes of type HCATNetwork.node.SimpleCenterlineNode,
-        * edges of type HCATNetwork.edge.SimpleCenterlineEdge.
+        * nodes of type hcatnetwork.node.SimpleCenterlineNodeFeatures,
+        * edges of type hcatnetwork.edge.SimpleCenterlineEdgeFeatures.
     
     The graph performs automatic type checking, so that only valid nodes and edges can be added to the graph.
 
@@ -295,7 +299,7 @@ class SimpleCenterlineGraph(networkx.classes.graph.Graph):
 
         Parameters
         ----------
-        attr : **dict or key=value pairs. Mandatory attributes are:
+        attr : **dict or key=value pairs, same contained in SimpleCenterlineGraphFeatures. Mandatory attributes are:
             image_id : str
                 The image id of the image from which the graph was extracted.
                 This string has no fixed format, and can be anything, but it should be clear enough
@@ -311,11 +315,11 @@ class SimpleCenterlineGraph(networkx.classes.graph.Graph):
         self._check_mandatory_attribute_of_graph("image_id", str)
         self._check_mandatory_attribute_of_graph("are_left_right_disjointed", bool)
         # Check mandatory attributes of nodes
-        self._simple_centerline_node_type = SimpleCenterlineNode()
+        self._simple_centerline_node_type = SimpleCenterlineNodeFeatures()
         self._simple_centerline_node_mandatory_keys_list = [k for k in self._simple_centerline_node_type.keys()]
         self._simple_centerline_node_mandatory_types_dict = self._simple_centerline_node_type.__annotations__
         # Check mandatory attributes of edges
-        self._simple_centerline_edge_type = SimpleCenterlineEdge()
+        self._simple_centerline_edge_type = SimpleCenterlineEdgeFeatures()
         self._simple_centerline_edge_mandatory_keys_list = [k for k in self._simple_centerline_edge_type.keys()]
         self._simple_centerline_edge_mandatory_types_dict = self._simple_centerline_edge_type.__annotations__
 
@@ -329,16 +333,16 @@ class SimpleCenterlineGraph(networkx.classes.graph.Graph):
     def add_node(self, node_for_adding: str, **attr):
         """Add a single node node_for_adding and update node attributes.
 
-        The node's attributes dictionary should be of type HCATNetwork.node.SimpleCenterlineNode or a dictionary of
-        attributes must be provided that has all attributes of a HCATNetwork.node.SimpleCenterlineNode.
+        The node's attributes dictionary should be of type hcatnetwork.node.SimpleCenterlineNodeFeatures or a dictionary of
+        attributes must be provided that has all attributes of a hcatnetwork.node.SimpleCenterlineNodeFeatures.
 
         Parameters
         ----------
         node_for_adding : str
             The node id.
-        attr : **dict or **SimpleCenterlineNode or key=value pairs.
-            Dictionary of node attributes. Dictionary must have all attributes of a HCATNetwork.node.SimpleCenterlineNode.
-            Alternatively, it can be a **dict, where dict is of type HCATNetwork.node.SimpleCenterlineNode.
+        attr : **dict or **SimpleCenterlineNodeFeatures or key=value pairs.
+            Dictionary of node attributes. Dictionary must have all attributes of a hcatnetwork.node.SimpleCenterlineNodeFeatures.
+            Alternatively, it can be a **dict, where dict is of type hcatnetwork.node.SimpleCenterlineNodeFeatures.
         """
         # Node id type checking
         if not isinstance(node_for_adding, str):
@@ -346,7 +350,7 @@ class SimpleCenterlineGraph(networkx.classes.graph.Graph):
         # Node attributes type checking
         for k in attr:
             if not k in self._simple_centerline_node_mandatory_keys_list:
-                raise AttributeError(f"Node attribute {k} is not a valid attribute for a SimpleCenterlineNode.")
+                raise AttributeError(f"Node attribute {k} is not a valid attribute for a SimpleCenterlineNodeFeatures.")
             if not isinstance(attr[k], self._simple_centerline_node_mandatory_types_dict[k]):
                 raise TypeError(f"Node attribute {k} must be of type {self._simple_centerline_node_mandatory_types_dict[k]}, instead it is a {type(attr[k])}.")
         # All checks passed, add the node
@@ -355,8 +359,8 @@ class SimpleCenterlineGraph(networkx.classes.graph.Graph):
     def add_edge(self, u_of_edge: str, v_of_edge: str, **attr):
         """Add an edge between u_of_edge and v_of_edge.
 
-        The edge should be of type HCATNetwork.edge.SimpleCenterlineEdge or a dictionary of
-        attributes must be provided that has all attributes of a HCATNetwork.edge.SimpleCenterlineEdge.
+        The edge should be of type hcatnetwork.edge.SimpleCenterlineEdgeFeatures or a dictionary of
+        attributes must be provided that has all attributes of a hcatnetwork.edge.SimpleCenterlineEdgeFeatures.
 
         Parameters
         ----------
@@ -364,9 +368,9 @@ class SimpleCenterlineGraph(networkx.classes.graph.Graph):
             The id of the first node of the edge.
         v_of_edge : str
             The id of the second node of the edge.
-        attr : **dict or **SimpleCenterlineEdge or key=value pairs.
-            Dictionary of edge attributes. Dictionary must have all attributes of a HCATNetwork.edge.SimpleCenterlineEdge.
-            Alternatively, it can be a **dict, where dict is of type HCATNetwork.edge.SimpleCenterlineEdge.
+        attr : **dict or **SimpleCenterlineEdgeFeatures or key=value pairs.
+            Dictionary of edge attributes. Dictionary must have all attributes of a hcatnetwork.edge.SimpleCenterlineEdgeFeatures.
+            Alternatively, it can be a **dict, where dict is of type hcatnetwork.edge.SimpleCenterlineEdgeFeatures.
         """
         # Edge nodes id type checking
         if not isinstance(u_of_edge, str):
@@ -376,7 +380,7 @@ class SimpleCenterlineGraph(networkx.classes.graph.Graph):
         # Edge attributes type checking
         for k in attr:
             if not k in self._simple_centerline_edge_mandatory_keys_list:
-                raise AttributeError(f"Edge attribute {k} is not a valid attribute for a SimpleCenterlineEdge.")
+                raise AttributeError(f"Edge attribute {k} is not a valid attribute for a SimpleCenterlineEdgeFeatures.")
         if not isinstance(attr[k], self._simple_centerline_edge_mandatory_types_dict[k]):
                 raise TypeError(f"Node attribute {k} must be of type {self._simple_centerline_edge_mandatory_types_dict[k]}, instead it is a {type(attr[k])}.")
         # All checks passed, add the edge
@@ -400,25 +404,25 @@ class SimpleCenterlineGraph(networkx.classes.graph.Graph):
             raise ValueError(f"Node with id \"{node_id}\" is not in graph.")
         node = self.nodes[node_id]
         # Node is a coronary ostium
-        if node['topology_class'].value == ArteryPointTopologyClass.OSTIUM.value:
+        if node['topology_class'].value == ArteryNodeTopology.OSTIUM.value:
             return tuple([node_id])
         # Node is not a coronary ostium
         # The node could be associated with either one or both arterial trees.
         # There should be no nodes asssociated with no artrial trees.
-        if node['arterial_tree'].value != ArteryPointTree.RL.value:
+        if node['arterial_tree'].value != ArteryNodeSide.RL.value:
             # The node is associated with a single tree
             for n in self.nodes:
-                if self.nodes[n]['arterial_tree'].value == node['arterial_tree'].value and self.nodes[n]['topology_class'].value == ArteryPointTopologyClass.OSTIUM.value:
+                if self.nodes[n]['arterial_tree'].value == node['arterial_tree'].value and self.nodes[n]['topology_class'].value == ArteryNodeTopology.OSTIUM.value:
                     return tuple([n])
         else:
             # The node is associated with both arterial trees
             count_hits_ = 0
             left_ostium_n, right_ostium_n = None, None
             for n in self.nodes:
-                if self.nodes[n]['topology_class'].value == ArteryPointTopologyClass.OSTIUM.value:
-                    if self.nodes[n]['arterial_tree'].value == ArteryPointTree.LEFT.value:
+                if self.nodes[n]['topology_class'].value == ArteryNodeTopology.OSTIUM.value:
+                    if self.nodes[n]['arterial_tree'].value == ArteryNodeSide.LEFT.value:
                         left_ostium_n = n
-                    elif self.nodes[n]['arterial_tree'].value == ArteryPointTree.RIGHT.value:
+                    elif self.nodes[n]['arterial_tree'].value == ArteryNodeSide.RIGHT.value:
                         right_ostium_n = n
                     else:
                         raise RuntimeError(f"Node {n} is a coronary ostium associated with no arterial tree (nor left, nor right).")
@@ -440,10 +444,10 @@ class SimpleCenterlineGraph(networkx.classes.graph.Graph):
         count_hits_ = 0
         left_ostium_n, right_ostium_n = None, None
         for n in self.nodes:
-            if self.nodes[n]['topology_class'].value == ArteryPointTopologyClass.OSTIUM.value:
-                if self.nodes[n]['arterial_tree'].value == ArteryPointTree.LEFT.value:
+            if self.nodes[n]['topology_class'].value == ArteryNodeTopology.OSTIUM.value:
+                if self.nodes[n]['arterial_tree'].value == ArteryNodeSide.LEFT.value:
                     left_ostium_n = n
-                elif self.nodes[n]['arterial_tree'].value == ArteryPointTree.RIGHT.value:
+                elif self.nodes[n]['arterial_tree'].value == ArteryNodeSide.RIGHT.value:
                     right_ostium_n = n
                 else:
                     raise RuntimeError(f"Node {n} is a coronary ostium associated with no arterial tree (nor left, nor right).")
@@ -525,7 +529,7 @@ class SimpleCenterlineGraph(networkx.classes.graph.Graph):
                 subgraph.add_node(segment[1], **self.nodes[segment[1]])
         # Add the edges
         for segment in segments:
-            edge_features = SimpleCenterlineEdge()
+            edge_features = SimpleCenterlineEdgeFeatures()
             edge_features["euclidean_distance"] = networkx.algorithms.shortest_path_length(self, segment[0], segment[1], weight="euclidean_distance")
             edge_features.update_weight_from_euclidean_distance()
             subgraph.add_edge(segment[0], segment[1], **edge_features)
@@ -577,7 +581,7 @@ class SimpleCenterlineGraph(networkx.classes.graph.Graph):
                 # Add the edge
                 # Here, the edge's property "euclidean_distance" is the actual distance between the nodes.
                 if not graph_new.has_edge(n0, n1):
-                    edge_features = SimpleCenterlineEdge()
+                    edge_features = SimpleCenterlineEdgeFeatures()
                     n0_p = numpy.array([self.nodes[n0]["x"], self.nodes[n0]["y"], self.nodes[n0]["z"]])
                     n1_p = numpy.array([self.nodes[n1]["x"], self.nodes[n1]["y"], self.nodes[n1]["z"]])
                     edge_features["euclidean_distance"] = numpy.linalg.norm(n0_p - n1_p)
@@ -614,11 +618,11 @@ class SimpleCenterlineGraph(networkx.classes.graph.Graph):
                     while (str(node_id_counter) in graph_new.nodes) or (str(node_id_counter) in untouchable_node_ids):
                         # make sure no new nodes have the same id
                         node_id_counter += 1
-                    node_features = SimpleCenterlineNode()
+                    node_features = SimpleCenterlineNodeFeatures()
                     node_features.set_vertex(position_new_)
                     node_features["r"] = radius_new_
                     node_features["t"] = 0.0
-                    node_features["topology_class"] = ArteryPointTopologyClass.SEGMENT
+                    node_features["topology_class"] = ArteryNodeTopology.SEGMENT
                     node_features["arterial_tree"] = self.nodes[node_before_]["arterial_tree"]
                     graph_new.add_node(str(node_id_counter), **node_features)
                     nodes_ids_to_connect_in_sequence_list.append(str(node_id_counter))
@@ -631,7 +635,7 @@ class SimpleCenterlineGraph(networkx.classes.graph.Graph):
                     n0 = nodes_ids_to_connect_in_sequence_list[i]
                     n1 = nodes_ids_to_connect_in_sequence_list[i + 1]
                     if not graph_new.has_edge(n0, n1):
-                        edge_features = SimpleCenterlineEdge()
+                        edge_features = SimpleCenterlineEdgeFeatures()
                         n0_p = numpy.array([graph_new.nodes[n0]["x"], graph_new.nodes[n0]["y"], graph_new.nodes[n0]["z"]])
                         n1_p = numpy.array([graph_new.nodes[n1]["x"], graph_new.nodes[n1]["y"], graph_new.nodes[n1]["z"]])
                         edge_features["euclidean_distance"] = numpy.linalg.norm(n0_p - n1_p)
@@ -675,7 +679,7 @@ class SimpleCenterlineGraph(networkx.classes.graph.Graph):
                 raise ValueError(f"Affine transformation matrix must be a 4x4 matrix, not {affine_transformation_matrix.shape}.")
         # Cycle through all endpoints
         for n in self.nodes:
-            if self.nodes[n]['topology_class'] == ArteryPointTopologyClass.ENDPOINT:
+            if self.nodes[n]['topology_class'] == ArteryNodeTopology.ENDPOINT:
                 endpoint_node_id = n
                 # get coronary ostium node id that is connected to this endpoint
                 ostia_node_id = self.get_relative_coronary_ostia_node_id(endpoint_node_id)
@@ -699,9 +703,9 @@ class SimpleCenterlineGraph(networkx.classes.graph.Graph):
                     # - make the json string through this utility function
                     file_content_str = numpy_array_to_open_curve_json(arr_, labels_, descriptions_)
                     # create the file
-                    if self.nodes[ostium_node_id]['arterial_tree'] == ArteryPointTree.LEFT:
+                    if self.nodes[ostium_node_id]['arterial_tree'] == ArteryNodeSide.LEFT:
                         tree = "left"
-                    if self.nodes[ostium_node_id]['arterial_tree'] == ArteryPointTree.RIGHT:
+                    if self.nodes[ostium_node_id]['arterial_tree'] == ArteryNodeSide.RIGHT:
                         tree = "right"
                     f_name = f"{tree}_arterial_segment_{ostium_node_id}_to_{endpoint_node_id}.SlicerOpenCurve.mkr.json"
                     f_path = os.path.join(save_directory, f_name)
@@ -788,7 +792,7 @@ class SimpleCenterlineGraph(networkx.classes.graph.Graph):
 
         See Also
         --------
-        HCATNetwork.graph.save_graph
+        hcatnetwork.graph.save_graph
         """
         # Save the graph
         save_graph(graph=self, file_path=filename)
@@ -879,7 +883,7 @@ class HeartDominance(Enum):
 ##################
 
 if __name__ == "__main__":
-    print("Running 'HCATNetwork.graph' module")
+    print("Running 'hcatnetwork.graph' module")
     
     # Load a coronary artery tree graph
     from ..draw.draw import draw_simple_centerlines_graph_2d

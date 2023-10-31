@@ -30,9 +30,9 @@ In this basic edge, only the euclidean distance between its nodes is conserved a
 The weight standard parameter is set equal to the signed distance.
 
 To run as a module, activate the venv, go inside the HCATNetwork parent directory,
-and use: python -m HCATNetwork.edge.edge
+and use: python -m hcatnetwork.edge.edge
 """
-class SimpleCenterlineEdge(CoreDict):
+class SimpleCenterlineEdgeFeatures(CoreDict):
     weight: float
     euclidean_distance: float
 
@@ -52,9 +52,9 @@ class SimpleCenterlineEdge(CoreDict):
 
 
 if __name__ == "__main__":
-    print("Running 'HCATNetwork.edge' module")
+    print("Running 'hcatnetwork.edge' module")
 
-    d = SimpleCenterlineEdge()
+    d = SimpleCenterlineEdgeFeatures()
     d["weight"] = 0.9
     print(d.is_valid())
     print(d, type(d))

@@ -24,7 +24,7 @@ from mpl_toolkits.mplot3d.art3d import Line3DCollection
 
 
 from ..graph import SimpleCenterlineGraph
-from ..node import SimpleCenterlineNode, ArteryPointTopologyClass, ArteryPointTree
+from ..node import SimpleCenterlineNodeFeatures, ArteryNodeTopology, ArteryNodeSide
 from .styles import *
 
 class SimpleCenterlineGraphInteractiveDrawer():
@@ -59,10 +59,10 @@ class SimpleCenterlineGraphInteractiveDrawer():
 
     See Also
     --------
-    HCATNetwork.graph.SimpleCenterlineGraph
-    HCATNetwork.node.SimpleCenterlineNode
-    HCATNetwork.edge.SimpleCenterlineEdge
-    HCATNetwork.draw.styles
+    hcatnetwork.graph.SimpleCenterlineGraph
+    hcatnetwork.node.SimpleCenterlineNodeFeatures
+    hcatnetwork.edge.SimpleCenterlineEdgeFeatures
+    hcatnetwork.draw.styles
     """
     fig: matplotlib.figure.Figure
     ax: matplotlib.axes.Axes
@@ -216,21 +216,21 @@ class SimpleCenterlineGraphInteractiveDrawer():
         By default, nodes are viewed projected to the XY plane.
         """
         nodes_facecolor_map_dict = {
-            ArteryPointTree.RIGHT.value: NODE_FACECOLOR_RCA,
-            ArteryPointTree.LEFT.value: NODE_FACECOLOR_LCA,
-            ArteryPointTree.RL.value: NODE_FACECOLOR_LR
+            ArteryNodeSide.RIGHT.value: NODE_FACECOLOR_RCA,
+            ArteryNodeSide.LEFT.value: NODE_FACECOLOR_LCA,
+            ArteryNodeSide.RL.value: NODE_FACECOLOR_LR
         }
         nodes_edgecolor_map_dict = {
-            ArteryPointTopologyClass.OSTIUM.value: NODE_EDGEECOLOR_START,
-            ArteryPointTopologyClass.SEGMENT.value: NODE_EDGEECOLOR_DEFAULT,
-            ArteryPointTopologyClass.ENDPOINT.value: NODE_EDGEECOLOR_END,
-            ArteryPointTopologyClass.INTERSECTION.value: NODE_EDGEECOLOR_CROSS
+            ArteryNodeTopology.OSTIUM.value: NODE_EDGEECOLOR_START,
+            ArteryNodeTopology.SEGMENT.value: NODE_EDGEECOLOR_DEFAULT,
+            ArteryNodeTopology.ENDPOINT.value: NODE_EDGEECOLOR_END,
+            ArteryNodeTopology.INTERSECTION.value: NODE_EDGEECOLOR_CROSS
         }
         nodes_edgewidth_map_dict = {
-            ArteryPointTopologyClass.OSTIUM.value: 2.2,
-            ArteryPointTopologyClass.SEGMENT.value: 0.0,
-            ArteryPointTopologyClass.ENDPOINT.value: 1,
-            ArteryPointTopologyClass.INTERSECTION.value: 1.8
+            ArteryNodeTopology.OSTIUM.value: 2.2,
+            ArteryNodeTopology.SEGMENT.value: 0.0,
+            ArteryNodeTopology.ENDPOINT.value: 1,
+            ArteryNodeTopology.INTERSECTION.value: 1.8
         }
         c_in  = []
         c_out = []
@@ -639,19 +639,19 @@ class SimpleCenterlineGraphInteractiveDrawer():
         annotation_text  = f"Node \"{node_id}\"\n"
         annotation_text += f"x: {node['x']: 7.3f} mm\ny: {node['y']: 7.3f} mm\nz: {node['z']: 7.3f} mm\n"
         annotation_text += f"r: {node['r']: 7.3f} mm\nt: {node['t']: 7.3f} s\n"
-        if node['arterial_tree'].value == ArteryPointTree.RIGHT.value:
+        if node['arterial_tree'].value == ArteryNodeSide.RIGHT.value:
             annotation_text += f"Right arterial tree\n"
-        elif node['arterial_tree'].value == ArteryPointTree.LEFT.value:
+        elif node['arterial_tree'].value == ArteryNodeSide.LEFT.value:
             annotation_text += f"Left arterial tree\n"
-        elif node['arterial_tree'].value == ArteryPointTree.RL.value:
+        elif node['arterial_tree'].value == ArteryNodeSide.RL.value:
             annotation_text += f"Both arterial trees\n"
-        if node['topology_class'].value == ArteryPointTopologyClass.OSTIUM.value:
+        if node['topology_class'].value == ArteryNodeTopology.OSTIUM.value:
             annotation_text += f"Coronary ostium\n"
-        elif node['topology_class'].value == ArteryPointTopologyClass.SEGMENT.value:
+        elif node['topology_class'].value == ArteryNodeTopology.SEGMENT.value:
             annotation_text += f"Arterial segment\n"
-        elif node['topology_class'].value == ArteryPointTopologyClass.INTERSECTION.value:
+        elif node['topology_class'].value == ArteryNodeTopology.INTERSECTION.value:
             annotation_text += f"Arterial branching\n"
-        elif node['topology_class'].value == ArteryPointTopologyClass.ENDPOINT.value:
+        elif node['topology_class'].value == ArteryNodeTopology.ENDPOINT.value:
             annotation_text += f"Branch endpoint\n"
         # - distance from ostium/ostia
         ostia = self.graph.get_relative_coronary_ostia_node_id(node_id=node_id)
@@ -871,9 +871,9 @@ def draw_simple_centerlines_graph_2d(graph: networkx.Graph | SimpleCenterlineGra
     ----------
     graph : networkx.Graph
         The graph to draw. Assumes this kind of dictionaries:
-            nodes: HCATNetwork.node.SimpleCenterlineNode
-            edges: HCATNetwork.edge.SimpleCenterlineEdge
-            graph: HCATNetwork.graph.SimpleCenterlineGraph
+            nodes: hcatnetwork.node.SimpleCenterlineNodeFeatures
+            edges: hcatnetwork.edge.SimpleCenterlineEdgeFeatures
+            graph: hcatnetwork.graph.SimpleCenterlineGraph
     backend : str, optional = ["hcatnetwork", "networkx", "debug"]
         The backend to use for drawing. 
             "hcatnetwork": uses the HCATNetwork library to draw the graph interactively. Its backend is matplotlib.
@@ -936,20 +936,20 @@ def draw_simple_centerlines_graph_2d(graph: networkx.Graph | SimpleCenterlineGra
         node_color = ["" for n in graph.nodes]
         for i, n in enumerate(graph.nodes.values()):
             # tree
-            if n["arterial_tree"].value == ArteryPointTree.LEFT.value:
+            if n["arterial_tree"].value == ArteryNodeSide.LEFT.value:
                 node_color[i] = NODE_FACECOLOR_LCA
-            elif n["arterial_tree"].value == ArteryPointTree.RIGHT.value:
+            elif n["arterial_tree"].value == ArteryNodeSide.RIGHT.value:
                 node_color[i] = NODE_FACECOLOR_RCA
-            elif n["arterial_tree"].value == ArteryPointTree.RL.value:
+            elif n["arterial_tree"].value == ArteryNodeSide.RL.value:
                 node_color[i] = NODE_FACECOLOR_LR
             else:
                 node_color[i] = NODE_FACECOLOR_DEFAULT
             # Topography
-            if n["topology_class"].value == ArteryPointTopologyClass.OSTIUM.value:
+            if n["topology_class"].value == ArteryNodeTopology.OSTIUM.value:
                 node_color[i] = NODE_EDGEECOLOR_START
-            elif n["topology_class"].value == ArteryPointTopologyClass.ENDPOINT.value:
+            elif n["topology_class"].value == ArteryNodeTopology.ENDPOINT.value:
                 node_color[i] = NODE_EDGEECOLOR_END
-            elif n["topology_class"].value == ArteryPointTopologyClass.INTERSECTION.value:
+            elif n["topology_class"].value == ArteryNodeTopology.INTERSECTION.value:
                 node_color[i] = NODE_EDGEECOLOR_CROSS
         node_color = numpy.array(node_color)
         node_edge_width = numpy.zeros((graph.number_of_nodes(),))
@@ -1028,9 +1028,9 @@ def draw_simple_centerlines_graph_2d(graph: networkx.Graph | SimpleCenterlineGra
 def draw_centerlines_graph_3d(graph):
     """ NOT READY YET, DO NOT USE
     Assumes this kind on dictionaries:
-        nodes: HCATNetwork.node.SimpleCenterlineNode
-        edges: HCATNetwork.edge.SimpleCenterlineEdge
-        graph: HCATNetwork.graph.SimpleCenterlineGraph
+        nodes: hcatnetwork.node.SimpleCenterlineNodeFeatures
+        edges: hcatnetwork.edge.SimpleCenterlineEdgeFeatures
+        graph: hcatnetwork.graph.SimpleCenterlineGraph
     """
     ax = plt.subplot(111, projection="3d")
     # plot nodes
@@ -1040,15 +1040,15 @@ def draw_centerlines_graph_3d(graph):
     s_out = []
     positions = []
     for n in graph.nodes:
-        n_ = SimpleCenterlineNode(**(graph.nodes[n]))
-        c_in.append(NODE_FACECOLOR_RCA if n_["arterial_tree"].value == ArteryPointTree.RIGHT.value else NODE_FACECOLOR_LCA)
-        if n_["topology_class"].value == ArteryPointTopologyClass.OSTIUM.value:
+        n_ = SimpleCenterlineNodeFeatures(**(graph.nodes[n]))
+        c_in.append(NODE_FACECOLOR_RCA if n_["arterial_tree"].value == ArteryNodeSide.RIGHT.value else NODE_FACECOLOR_LCA)
+        if n_["topology_class"].value == ArteryNodeTopology.OSTIUM.value:
             c_out.append(NODE_EDGEECOLOR_START)
             s_out.append(2.5)
-        elif n_["topology_class"].value == ArteryPointTopologyClass.ENDPOINT.value:
+        elif n_["topology_class"].value == ArteryNodeTopology.ENDPOINT.value:
             c_out.append(NODE_EDGEECOLOR_END)
             s_out.append(2.5)
-        elif n_["topology_class"].value == ArteryPointTopologyClass.INTERSECTION.value:
+        elif n_["topology_class"].value == ArteryNodeTopology.INTERSECTION.value:
             c_out.append(NODE_EDGEECOLOR_CROSS)
             s_out.append(2)
         else:
@@ -1086,8 +1086,8 @@ def draw_centerlines_graph_3d(graph):
     # plot undirected edges
     segs = []
     for u_,v_,a in graph.edges(data=True):
-        uu = SimpleCenterlineNode(**(graph.nodes[u_])).get_vertex_list()
-        vv = SimpleCenterlineNode(**(graph.nodes[v_])).get_vertex_list()
+        uu = SimpleCenterlineNodeFeatures(**(graph.nodes[u_])).get_vertex_list()
+        vv = SimpleCenterlineNodeFeatures(**(graph.nodes[v_])).get_vertex_list()
         segs.append(numpy.array([uu[:3],vv[:3]]))
     line_segments = Line3DCollection(segs, zorder=1, linewidth=0.4, color=EDGE_FACECOLOR_DEFAULT)
     ax.add_collection(line_segments)
