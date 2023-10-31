@@ -506,9 +506,11 @@ class BasicCenterlineGraph(CoreDict):
         return graph_new
     
     @staticmethod
-    def convert_to_3dslicer_opencurve(graph: networkx.classes.graph.Graph, save_directory: str) -> None:
+    def convert_to_3dslicer_opencurve(graph: networkx.classes.graph.Graph, save_directory: str, affine_transformation_matrix: numpy.ndarray | None = None) -> None:
         """This function converts each segment, from ostium to endpoint, into an open curve
         that can be loaded directly in 3D Slicer.
+        
+        The 3D Slicer curve control points coordinate system is the RAS (Right, Anterior, Superior) coordinate system.
         
         Parameters
         ----------
@@ -517,6 +519,9 @@ class BasicCenterlineGraph(CoreDict):
         save_directory : str
             The directory where the curves will be saved.
             If the directory is just a name, it will be created inside the current working directory.
+        affine_transformation_matrix : numpy.ndarray, optional
+            The affine transformation matrix to apply to the points, by default None.
+            If None, the identity transformation is applied.
         
         Raises
         ------
@@ -529,6 +534,12 @@ class BasicCenterlineGraph(CoreDict):
                 os.mkdir(save_directory)
             except:
                 raise FileNotFoundError(f"Directory {save_directory} does not exist and cannot be created.")
+        # Affine transformation matrix handling
+        if affine_transformation_matrix is None:
+            affine_transformation_matrix = numpy.identity(4)
+        else:
+            if affine_transformation_matrix.shape != (4, 4):
+                raise ValueError(f"Affine transformation matrix must be a 4x4 matrix, not {affine_transformation_matrix.shape}.")
         # Cycle through all endpoints
         for n in graph.nodes:
             if graph.nodes[n]['topology_class'] == ArteryPointTopologyClass.ENDPOINT:
@@ -545,8 +556,14 @@ class BasicCenterlineGraph(CoreDict):
                     arr_ = numpy.array(
                         [[graph.nodes[n]['x'], graph.nodes[n]['y'], graph.nodes[n]['z']] for n in path]
                     )
+                    # - transform the points according to the transformation matrix
+                    arr_ = numpy.concatenate((arr_, numpy.ones((arr_.shape[0], 1))), axis=1).T # 4 x N
+                    arr_ = numpy.matmul(affine_transformation_matrix, arr_).T
+                    arr_ = arr_[:, :3]
+                    # - get other data
                     labels_ = [n for n in path]
                     descriptions_ = [f"{graph.nodes[n]['arterial_tree'].name} {graph.nodes[n]['topology_class'].name}" for n in path]
+                    # - make the json string through this utility function
                     file_content_str = numpy_array_to_open_curve_json(arr_, labels_, descriptions_)
                     # create the file
                     if graph.nodes[ostium_node_id]['arterial_tree'] == ArteryPointTree.LEFT:
@@ -561,9 +578,11 @@ class BasicCenterlineGraph(CoreDict):
                     f.close()
 
     @staticmethod
-    def convert_to_3dslicer_fiducials(graph: networkx.classes.graph.Graph, save_filename: str) -> None:
-        """This function converts the whole graph into a fiducial object ( a list of markers)
+    def convert_to_3dslicer_fiducials(graph: networkx.classes.graph.Graph, save_filename: str, affine_transformation_matrix: numpy.ndarray | None = None) -> None:
+        """This function converts the whole graph into a fiducial object (a list of markers)
         that can be loaded directly in 3D Slicer.
+
+        The 3D Slicer fiducials coordinate system is the RAS (Right, Anterior, Superior) coordinate system.
         
         Parameters
         ----------
@@ -573,6 +592,9 @@ class BasicCenterlineGraph(CoreDict):
             The file where the fiducials will be saved.
             It must end with ".SlicerFiducial.mkr.json", else everything after the first "." will be replaced by
             the correct extension.
+        affine_transformation_matrix : numpy.ndarray, optional
+            The affine transformation matrix to apply to the points, by default None.
+            If None, the identity transformation is applied.
         
         Raises
         ------
@@ -586,6 +608,12 @@ class BasicCenterlineGraph(CoreDict):
                 os.mkdir(dir_)
             except:
                 raise FileNotFoundError(f"Directory {dir_} does not exist and cannot be created.")
+        # Affine transformation matrix handling
+        if affine_transformation_matrix is None:
+            affine_transformation_matrix = numpy.identity(4)
+        else:
+            if affine_transformation_matrix.shape != (4, 4):
+                raise ValueError(f"Affine transformation matrix must be a 4x4 matrix, not {affine_transformation_matrix.shape}.")
         # Handle file name
         if not f_.endswith(".SlicerFiducial.mkr.json"):
             f_ = f_.split(".")[0]
@@ -595,6 +623,11 @@ class BasicCenterlineGraph(CoreDict):
         arr_ = numpy.array(
             [[graph.nodes[n]['x'], graph.nodes[n]['y'], graph.nodes[n]['z']] for n in graph.nodes]
         )
+        # - transform the points according to the transformation matrix
+        arr_ = numpy.concatenate((arr_, numpy.ones((arr_.shape[0], 1))), axis=1).T # 4 x N
+        arr_ = numpy.matmul(affine_transformation_matrix, arr_).T
+        arr_ = arr_[:, :3]
+        # - get other data
         labels_ = [n for n in graph.nodes]
         descriptions_ = [f"{graph.nodes[n]['arterial_tree'].name} {graph.nodes[n]['topology_class'].name}" for n in graph.nodes]
         file_content_str = numpy_array_to_fiducials_json(arr_, labels_, descriptions_)
@@ -665,17 +698,54 @@ if __name__ == "__main__":
         drawCenterlinesGraph2D(reampled_graph)
 
     # Convert to 3D Slicer open curve
+
     if 1:
-        BasicCenterlineGraph.convert_to_3dslicer_opencurve(
-            graph=g_,
-            save_directory="C:\\Users\\lecca\\Desktop\\test__slicer_hcatnetwork"
-        )
-    # Convert to 3D Slicer fiducials
-    if 1:
-        BasicCenterlineGraph.convert_to_3dslicer_fiducials(
-            graph=g_,
-            save_directory="C:\\Users\\lecca\\Desktop\\test__slicer_hcatnetwork\\fiducials_"+g_["image_id"]+"_.ext"
-        )
+        # Graph
+        g_prova = "C:\\Users\\lecca\\Desktop\\AAMIASoftwares-research\\Data\\ASOCA\\normal_prova\\CTCA\\Normal_01_0.5mm.GML"
+        g_ = loadGraph(g_prova)
+        #drawCenterlinesGraph2D(g_)
+
+        # Image
+        import SimpleITK as sitk
+        image_path = "C:\\Users\\lecca\\Desktop\\AAMIASoftwares-research\\Data\\ASOCA\\normal_prova\\CTCA\\Normal_1.nrrd"
+        itkimage = sitk.ReadImage(image_path)
+        spacing = itkimage.GetSpacing()
+        spacing = numpy.array(spacing)
+        origin = itkimage.GetOrigin()
+        [sizex, sizey, _] = itkimage.GetSize()
+
+        folder = "C:\\Users\\lecca\\Desktop\\test__slicer_hcatnetwork_"+g_.graph["image_id"].replace("/", "_")
+        fname_fiducials= os.path.join(folder, "fiducials_"+g_.graph["image_id"].replace("/", "_")+"_.ext")
+        
+        '''
+        affine_cat08 = numpy.array(
+            [  -1.0,    0.0,    0.0,   -origin[0],
+                0.0,   -1.0,    0.0,   -origin[1],
+                0.0,    0.0,    1.0,    origin[2],
+                0.0,    0.0,    0.0,    1.0 ]
+        ).reshape((4,4))
+        '''
+        affine_asoca = numpy.array(
+            [  -1.0,    0.0,    0.0,    -origin[0]*2,
+                0.0,   -1.0,    0.0,    -origin[1]*2,
+                0.0,    0.0,    1.0,    0.0,
+                0.0,    0.0,    0.0,    1.0 ]
+        ).reshape((4,4))
+
+
+        if 1:
+            BasicCenterlineGraph.convert_to_3dslicer_opencurve(
+                graph=g_,
+                save_directory=folder,
+                affine_transformation_matrix=affine_asoca
+            )
+        # Convert to 3D Slicer fiducials
+        if 1:
+            BasicCenterlineGraph.convert_to_3dslicer_fiducials(
+                graph=g_,
+                save_filename=fname_fiducials,
+                affine_transformation_matrix=affine_asoca
+            )
     
 
     
