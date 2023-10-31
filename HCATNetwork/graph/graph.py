@@ -26,9 +26,8 @@ from enum import Enum, auto
 import numpy
 import networkx
 
-from ..core.core import CoreDict
 from ..node.node import SimpleCenterlineNode, ArteryPointTopologyClass, ArteryPointTree
-from ..edge.edge import BasicEdge
+from ..edge.edge import SimpleCenterlineEdge
 from ..utils.slicer import numpy_array_to_open_curve_json, numpy_array_to_fiducials_json
 
 ###################################
@@ -40,7 +39,7 @@ def save_graph(
                networkx.classes.digraph.DiGraph|
                networkx.classes.multigraph.MultiGraph|
                networkx.classes.multidigraph.MultiDiGraph|
-               BasicCenterlineGraph,
+               SimpleCenterlineGraph,
         file_path: str):
     """Saves the graph in GML format using the networkx interface.
 
@@ -57,7 +56,7 @@ def save_graph(
             networkx.classes.digraph.DiGraph|
             networkx.classes.multigraph.MultiGraph|
             networkx.classes.multidigraph.MultiDiGraph|
-            BasicCenterlineGraph
+            SimpleCenterlineGraph
         The graph to be saved.
     file_path : str
         The path to the file where the graph will be saved as GML.
@@ -223,9 +222,9 @@ def load_graph(file_path: str) -> networkx.classes.graph.Graph:
                         elif graph.graph["node_features_conversion_dict"][k] == "list":
                             graph.nodes[n][k] = json.loads(n[k])
                         elif graph.graph["node_features_conversion_dict"][k] == "HCATNetwork.node.ArteryPointTopologyClass":
-                            graph.nodes[n][k] = load_enums(n, k, ArteryPointTopologyClass)
+                            graph.nodes[n][k] = load_enums(graph.nodes[n], k, ArteryPointTopologyClass)
                         elif graph.graph["node_features_conversion_dict"][k] == "HCATNetwork.node.ArteryPointTree":
-                            graph.nodes[n][k] = load_enums(n, k, ArteryPointTree)
+                            graph.nodes[n][k] = load_enums(graph.nodes[n], k, ArteryPointTree)
         del graph.graph["node_features_conversion_dict"]
     # Edge data
     if "edge_features_conversion_dict" in graph.graph:
@@ -260,7 +259,7 @@ def load_graph(file_path: str) -> networkx.classes.graph.Graph:
                     elif graph.graph["graph_features_conversion_dict"][k] == "list":
                         graph.graph[k] = json.loads(graph.graph[k])
                     elif graph.graph["node_features_conversion_dict"][k] == "HCATNetwork.node.HeartDominance":
-                        graph.graph[k] = load_enums(n, k, HeartDominance)
+                        graph.graph[k] = load_enums(graph.graph, k, HeartDominance)
         del graph.graph["graph_features_conversion_dict"]
     # Done
     return graph
@@ -269,20 +268,22 @@ def load_graph(file_path: str) -> networkx.classes.graph.Graph:
 
 
 ########################
-# Basic Centerline Graph
+# Simple Centerline Graph
 ########################                 
                     
-class BasicCenterlineGraph(networkx.classes.graph.Graph):
+class SimpleCenterlineGraph(networkx.classes.graph.Graph):
     """The basic centerline graph, child of NetworkX.Graph.
 
-    There is no way of hard-imposing it in python, but the graph should contain:
+    The graph should contain:
         * nodes of type HCATNetwork.node.SimpleCenterlineNode,
-        * edges of type HCATNetwork.edge.BasicEdge.
+        * edges of type HCATNetwork.edge.SimpleCenterlineEdge.
+    
+    The graph performs automatic type checking, so that only valid nodes and edges can be added to the graph.
 
     Both trees (left and right) are stored in the same Graph structure.
     In some patients, it could happen that the left and right subgraphs are not disjointed, hence the need to have just one graph.
     
-    BasicCenterlineGraph, and all its algorithms and methods, assumes that the coronary ostia are disjointed, meaning that the 
+    SimpleCenterlineGraph, and all its algorithms and methods, assumes that the coronary ostia are disjointed, meaning that the 
     coronary ostia should not be overlapping or too near to each other. No control is actively performed to check this condition.
 
     See Also
@@ -290,7 +291,7 @@ class BasicCenterlineGraph(networkx.classes.graph.Graph):
     NetworkX.Graph
     """
     def __init__(self, **attr):
-        """Initialize a basic centerline graph with its mandatory attributes.
+        """Initialize a basic centerline graph with its mandatory attributes, child of NetworkX.Graph.
 
         Parameters
         ----------
@@ -306,16 +307,80 @@ class BasicCenterlineGraph(networkx.classes.graph.Graph):
         """
         # Make the graph
         super().__init__(**attr)
-        # Check mandatory attributes
+        # Check mandatory attributes of graph
         self._check_mandatory_attribute_of_graph("image_id", str)
         self._check_mandatory_attribute_of_graph("are_left_right_disjointed", bool)
+        # Check mandatory attributes of nodes
+        self._simple_centerline_node_type = SimpleCenterlineNode()
+        self._simple_centerline_node_mandatory_keys_list = [k for k in self._simple_centerline_node_type.keys()]
+        self._simple_centerline_node_mandatory_types_dict = self._simple_centerline_node_type.__annotations__
+        # Check mandatory attributes of edges
+        self._simple_centerline_edge_type = SimpleCenterlineEdge()
+        self._simple_centerline_edge_mandatory_keys_list = [k for k in self._simple_centerline_edge_type.keys()]
+        self._simple_centerline_edge_mandatory_types_dict = self._simple_centerline_edge_type.__annotations__
 
     def _check_mandatory_attribute_of_graph(self, attribute_name: str, attribute_type: type) -> None:
         """Check if the graph has the mandatory attribute with the correct type."""
         if self.graph[attribute_name] is None:
             raise ValueError(f"The graph must have a valid {attribute_name} which cannot be None.")
-        if not isinstance(self.graph[attribute_name], str):
-            raise ValueError(f"The graph's mandatory attribute {attribute_name} must be of type {attribute_type}, instead it is a {type(self.graph[attribute_name])}.")
+        if not isinstance(self.graph[attribute_name], attribute_type):
+            raise TypeError(f"The graph's mandatory attribute {attribute_name} must be of type {attribute_type}, instead it is a {type(self.graph[attribute_name])}.")
+
+    def add_node(self, node_for_adding: str, **attr):
+        """Add a single node node_for_adding and update node attributes.
+
+        The node's attributes dictionary should be of type HCATNetwork.node.SimpleCenterlineNode or a dictionary of
+        attributes must be provided that has all attributes of a HCATNetwork.node.SimpleCenterlineNode.
+
+        Parameters
+        ----------
+        node_for_adding : str
+            The node id.
+        attr : **dict or **SimpleCenterlineNode or key=value pairs.
+            Dictionary of node attributes. Dictionary must have all attributes of a HCATNetwork.node.SimpleCenterlineNode.
+            Alternatively, it can be a **dict, where dict is of type HCATNetwork.node.SimpleCenterlineNode.
+        """
+        # Node id type checking
+        if not isinstance(node_for_adding, str):
+            raise ValueError(f"Node id {node_for_adding} must be a string.")
+        # Node attributes type checking
+        for k in attr:
+            if not k in self._simple_centerline_node_mandatory_keys_list:
+                raise AttributeError(f"Node attribute {k} is not a valid attribute for a SimpleCenterlineNode.")
+            if not isinstance(attr[k], self._simple_centerline_node_mandatory_types_dict[k]):
+                raise TypeError(f"Node attribute {k} must be of type {self._simple_centerline_node_mandatory_types_dict[k]}, instead it is a {type(attr[k])}.")
+        # All checks passed, add the node
+        super().add_node(node_for_adding, **attr)
+    
+    def add_edge(self, u_of_edge: str, v_of_edge: str, **attr):
+        """Add an edge between u_of_edge and v_of_edge.
+
+        The edge should be of type HCATNetwork.edge.SimpleCenterlineEdge or a dictionary of
+        attributes must be provided that has all attributes of a HCATNetwork.edge.SimpleCenterlineEdge.
+
+        Parameters
+        ----------
+        u_of_edge : str
+            The id of the first node of the edge.
+        v_of_edge : str
+            The id of the second node of the edge.
+        attr : **dict or **SimpleCenterlineEdge or key=value pairs.
+            Dictionary of edge attributes. Dictionary must have all attributes of a HCATNetwork.edge.SimpleCenterlineEdge.
+            Alternatively, it can be a **dict, where dict is of type HCATNetwork.edge.SimpleCenterlineEdge.
+        """
+        # Edge nodes id type checking
+        if not isinstance(u_of_edge, str):
+            raise ValueError(f"Edge node id {u_of_edge} must be a string.")
+        if not isinstance(v_of_edge, str):
+            raise ValueError(f"Edge node id {v_of_edge} must be a string.")
+        # Edge attributes type checking
+        for k in attr:
+            if not k in self._simple_centerline_edge_mandatory_keys_list:
+                raise AttributeError(f"Edge attribute {k} is not a valid attribute for a SimpleCenterlineEdge.")
+        if not isinstance(attr[k], self._simple_centerline_edge_mandatory_types_dict[k]):
+                raise TypeError(f"Node attribute {k} must be of type {self._simple_centerline_edge_mandatory_types_dict[k]}, instead it is a {type(attr[k])}.")
+        # All checks passed, add the edge
+        super().add_edge(u_of_edge, v_of_edge, **attr)
 
     def get_relative_coronary_ostia_node_id(self, node_id: str) -> tuple[str] | tuple[str, str]:
         """Get the coronary ostium node id relative to the node with id node_id.
@@ -460,14 +525,14 @@ class BasicCenterlineGraph(networkx.classes.graph.Graph):
                 subgraph.add_node(segment[1], **self.nodes[segment[1]])
         # Add the edges
         for segment in segments:
-            edge_features = BasicEdge()
+            edge_features = SimpleCenterlineEdge()
             edge_features["euclidean_distance"] = networkx.algorithms.shortest_path_length(self, segment[0], segment[1], weight="euclidean_distance")
-            edge_features.updateWeightFromEuclideanDistance()
+            edge_features.update_weight_from_euclidean_distance()
             subgraph.add_edge(segment[0], segment[1], **edge_features)
         # Done
         return subgraph
         
-    def resample_coronary_artery_tree(self, mm_between_nodes: float = 0.5) -> BasicCenterlineGraph:
+    def resample_coronary_artery_tree(self, mm_between_nodes: float = 0.5) -> SimpleCenterlineGraph:
         """Resamples the coronary artery tree so that two connected points are on average mm_between_nodes millimeters apart.
 
         The tree is resampled so that the absolute position of coronary ostia, intersections and endpoints is preserved.
@@ -480,12 +545,12 @@ class BasicCenterlineGraph(networkx.classes.graph.Graph):
 
         Returns
         -------
-        BasicCenterlineGraph
+        SimpleCenterlineGraph
             The resampled graph.
         
         """
         # Create the new graph, copying the info from the original graph
-        graph_new = BasicCenterlineGraph(**self.graph)
+        graph_new = SimpleCenterlineGraph(**self.graph)
         graph_new.graph["image_id"] += f" - resampled {mm_between_nodes:3.3f} mm"
         # Get the anatomic segments of the original graph
         segments = self.get_anatomic_segments()
@@ -512,11 +577,11 @@ class BasicCenterlineGraph(networkx.classes.graph.Graph):
                 # Add the edge
                 # Here, the edge's property "euclidean_distance" is the actual distance between the nodes.
                 if not graph_new.has_edge(n0, n1):
-                    edge_features = BasicEdge()
+                    edge_features = SimpleCenterlineEdge()
                     n0_p = numpy.array([self.nodes[n0]["x"], self.nodes[n0]["y"], self.nodes[n0]["z"]])
                     n1_p = numpy.array([self.nodes[n1]["x"], self.nodes[n1]["y"], self.nodes[n1]["z"]])
                     edge_features["euclidean_distance"] = numpy.linalg.norm(n0_p - n1_p)
-                    edge_features.updateWeightFromEuclideanDistance()
+                    edge_features.update_weight_from_euclidean_distance()
                     graph_new.add_edge(n0, n1, **edge_features)
             else:
                 distances_to_sample = numpy.linspace(0, length, n_nodes)
@@ -550,7 +615,7 @@ class BasicCenterlineGraph(networkx.classes.graph.Graph):
                         # make sure no new nodes have the same id
                         node_id_counter += 1
                     node_features = SimpleCenterlineNode()
-                    node_features.setVertex(position_new_)
+                    node_features.set_vertex(position_new_)
                     node_features["r"] = radius_new_
                     node_features["t"] = 0.0
                     node_features["topology_class"] = ArteryPointTopologyClass.SEGMENT
@@ -566,11 +631,11 @@ class BasicCenterlineGraph(networkx.classes.graph.Graph):
                     n0 = nodes_ids_to_connect_in_sequence_list[i]
                     n1 = nodes_ids_to_connect_in_sequence_list[i + 1]
                     if not graph_new.has_edge(n0, n1):
-                        edge_features = BasicEdge()
+                        edge_features = SimpleCenterlineEdge()
                         n0_p = numpy.array([graph_new.nodes[n0]["x"], graph_new.nodes[n0]["y"], graph_new.nodes[n0]["z"]])
                         n1_p = numpy.array([graph_new.nodes[n1]["x"], graph_new.nodes[n1]["y"], graph_new.nodes[n1]["z"]])
                         edge_features["euclidean_distance"] = numpy.linalg.norm(n0_p - n1_p)
-                        edge_features.updateWeightFromEuclideanDistance()
+                        edge_features.update_weight_from_euclidean_distance()
                         graph_new.add_edge(n0, n1, **edge_features)
         return graph_new
     
@@ -729,8 +794,8 @@ class BasicCenterlineGraph(networkx.classes.graph.Graph):
         save_graph(graph=self, file_path=filename)
 
     @staticmethod
-    def from_networkx_graph(graph: networkx.classes.graph.Graph) -> BasicCenterlineGraph:
-        """Creates a BasicCenterlineGraph from a networkx.classes.graph.Graph.
+    def from_networkx_graph(graph: networkx.classes.graph.Graph) -> SimpleCenterlineGraph:
+        """Creates a SimpleCenterlineGraph from a networkx.classes.graph.Graph.
         
         Parameters
         ----------
@@ -739,11 +804,11 @@ class BasicCenterlineGraph(networkx.classes.graph.Graph):
         
         Returns
         -------
-        BasicCenterlineGraph
+        SimpleCenterlineGraph
             The converted graph.
         """
         # Create the new graph, copying the info from the original graph
-        graph_new = BasicCenterlineGraph(**graph.graph)
+        graph_new = SimpleCenterlineGraph(**graph.graph)
         # Add the nodes
         for n in graph.nodes:
             graph_new.add_node(n, **graph.nodes[n])
@@ -753,7 +818,7 @@ class BasicCenterlineGraph(networkx.classes.graph.Graph):
         return graph_new
 
     @staticmethod
-    def load(filename: str) -> BasicCenterlineGraph:
+    def load(filename: str) -> SimpleCenterlineGraph:
         """Load a graph from a file.
 
         The file format is GML (Graph Modeling Language), which is a text file format for graphs.
@@ -767,7 +832,7 @@ class BasicCenterlineGraph(networkx.classes.graph.Graph):
         
         Returns
         -------
-        BasicCenterlineGraph
+        SimpleCenterlineGraph
             The loaded graph.
         
         Raises
@@ -777,9 +842,12 @@ class BasicCenterlineGraph(networkx.classes.graph.Graph):
         """
         # Load the graph
         g_ = load_graph(file_path=filename)
-        # Convert to BasicCenterlineGraph
-        graph = BasicCenterlineGraph.from_networkx_graph(g_)
+        # Convert to SimpleCenterlineGraph
+        graph = SimpleCenterlineGraph.from_networkx_graph(g_)
         return graph
+
+
+
 
 
 ############################
@@ -814,9 +882,18 @@ if __name__ == "__main__":
     print("Running 'HCATNetwork.graph' module")
     
     # Load a coronary artery tree graph
-    from ..draw.draw import drawCenterlinesGraph2D
+    from ..draw.draw import draw_simple_centerlines_graph_2d
     f_prova = "C:\\Users\\lecca\\Desktop\\AAMIASoftwares-research\\Data\\CAT08\\CenterlineGraphs_FromReference\\dataset00.GML"
-    g_ = BasicCenterlineGraph.load(f_prova)
+    try:
+        g_ = SimpleCenterlineGraph.load(f_prova)
+    except TypeError as e:
+        g_ = load_graph(f_prova)
+        g_.graph["are_left_right_disjointed"] = bool(int(g_.graph["are_left_right_disjointed"]))
+        g_ = SimpleCenterlineGraph.from_networkx_graph(g_)
+    draw_simple_centerlines_graph_2d(g_)
+    draw_simple_centerlines_graph_2d(g_, backend="networkx")
+    draw_simple_centerlines_graph_2d(g_, backend="debug")
+
     
     # Get the anatomic segments
     if 1:
@@ -826,14 +903,14 @@ if __name__ == "__main__":
     # Get the anatomic subgraph
     if 1:
         subgraph = g_.get_anatomic_subgraph()
-        drawCenterlinesGraph2D(subgraph)
+        draw_simple_centerlines_graph_2d(subgraph)
 
     # Resample the graph
-    if 1:
+    if 0:
         reampled_graph = g_.resample_coronary_artery_tree(
             mm_between_nodes=0.5
         )
-        drawCenterlinesGraph2D(reampled_graph)
+        draw_simple_centerlines_graph_2d(reampled_graph)
 
     # Convert to 3D Slicer open curve
 
@@ -841,7 +918,7 @@ if __name__ == "__main__":
         # Graph
         g_prova = "C:\\Users\\lecca\\Desktop\\AAMIASoftwares-research\\Data\\ASOCA\\normal_prova\\CTCA\\Normal_01_0.5mm.GML"
         g_ = load_graph(g_prova)
-        # drawCenterlinesGraph2D(g_)
+        # draw_simple_centerlines_graph_2d(g_)
 
         # Image
         import SimpleITK as sitk
@@ -872,14 +949,14 @@ if __name__ == "__main__":
 
 
         if 1:
-            BasicCenterlineGraph.convert_to_3dslicer_opencurve(
+            SimpleCenterlineGraph.convert_to_3dslicer_opencurve(
                 graph=g_,
                 save_directory=folder,
                 affine_transformation_matrix=affine_asoca
             )
         # Convert to 3D Slicer fiducials
         if 1:
-            BasicCenterlineGraph.convert_to_3dslicer_fiducials(
+            SimpleCenterlineGraph.convert_to_3dslicer_fiducials(
                 graph=g_,
                 save_filename=fname_fiducials,
                 affine_transformation_matrix=affine_asoca

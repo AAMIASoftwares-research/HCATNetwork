@@ -37,13 +37,13 @@ class VertexNode(CoreDict):
     y: float 
     z: float
 
-    def getVertexList(self) -> list[float]:
+    def get_vertex_list(self) -> list[float]:
         return [self.__getitem__("x"), self.__getitem__("y"), self.__getitem__("z")]
 
-    def getVertexNumpyArray(self) -> numpy.ndarray:
-        return numpy.array(self.getVertexList())
+    def get_vertex_numpy_array(self) -> numpy.ndarray:
+        return numpy.array(self.get_vertex_list())
 
-    def setVertex(self, v: float | list | numpy.ndarray) -> None:
+    def set_vertex(self, v: float | list | numpy.ndarray) -> None:
         if isinstance(v, float):
             v = [v]
         if len(v) == 0 or len(v) > 3:
@@ -93,13 +93,13 @@ class SimpleCenterlineNode(VertexNode):
     r: float
     arterial_tree: ArteryPointTree
 
-    def getVertexRadiusList(self):
-        return self.getVertexList().extend(self.__getitem__("r"))
+    def get_vertex_radius_list(self):
+        return self.get_vertex_list().extend(self.__getitem__("r"))
 
-    def getVertexRadiusNumpyArray(self):
-        return numpy.array(self.getVertexRadiusList())
+    def get_vertex_radius_numpy_array(self):
+        return numpy.array(self.get_vertex_radius_list())
 
-    def setVertexRadius(self, v: float | list | numpy.ndarray):
+    def set_vertexRadius(self, v: float | list | numpy.ndarray):
         if isinstance(v, float):
             v = [v]
         if len(v) == 0 or len(v) > 4:

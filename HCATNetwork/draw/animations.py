@@ -9,7 +9,7 @@ import matplotlib.pyplot as plt
 from matplotlib.animation import FuncAnimation
 
 from ..node import ArteryPointTopologyClass
-from ..graph import BasicCenterlineGraph
+from ..graph import SimpleCenterlineGraph
 from ..graph import load_graph
 
 
@@ -92,8 +92,8 @@ if __name__ == "__main__":
 
     
     graph = load_graph(F_PROVA)
-    graph = BasicCenterlineGraph.resample_coronary_artery_tree(graph, 0.5)
-    ostia = BasicCenterlineGraph.get_coronary_ostia_node_id(graph)
+    graph = SimpleCenterlineGraph.resample_coronary_artery_tree(graph, 0.5)
+    ostia = SimpleCenterlineGraph.get_coronary_ostia_node_id(graph)
     shortest_path_lengths_from_ostia = networkx.shortest_path_length(graph, ostia[0])
     shortest_path_lengths_from_ostia.update(networkx.shortest_path_length(graph, ostia[1]))
     shortest_path_lengths_from_ostia.update({k: 0.0 for k in ostia})

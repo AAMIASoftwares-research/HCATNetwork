@@ -28,7 +28,7 @@ Now, you should be able to
 
 ```py
 import HCATNetwork
-print(HCATNetwork.edge.BasicEdge_KeysList)
+print(HCATNetwork.edge.SimpleCenterlineEdge_KeysList)
 ```
 
 just as you would with numpy and other packages.

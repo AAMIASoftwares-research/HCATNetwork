@@ -6,7 +6,7 @@ It is kinda like a header file with some added functionality, such as graph savi
 
 Access stuff with (example):
     import HCATNetwork
-    print(HCATNetwork.edge.BasicEdge_KeysList)
+    print(HCATNetwork.edge.SimpleCenterlineEdge_KeysList)
 
 As of now, supported node, edge and graph features include, beside the standard data-types supported by NetworkX and GML file format:
 - nested lists of whatever complexity

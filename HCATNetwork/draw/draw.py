@@ -23,12 +23,12 @@ from matplotlib.lines import Line2D
 from mpl_toolkits.mplot3d.art3d import Line3DCollection
 
 
-from ..graph import BasicCenterlineGraph
+from ..graph import SimpleCenterlineGraph
 from ..node import SimpleCenterlineNode, ArteryPointTopologyClass, ArteryPointTree
 from .styles import *
 
-class BasicCenterlineGraphInteractiveDrawer():
-    """Draws a BasicCenterlineGraph interactively in 2D using Matplotlib.
+class SimpleCenterlineGraphInteractiveDrawer():
+    """Draws a SimpleCenterlineGraph interactively in 2D using Matplotlib.
 
     Colors and styles are defined in HCATNetwork.draw.styles.
 
@@ -59,81 +59,81 @@ class BasicCenterlineGraphInteractiveDrawer():
 
     See Also
     --------
-    HCATNetwork.graph.BasicCenterlineGraph
+    HCATNetwork.graph.SimpleCenterlineGraph
     HCATNetwork.node.SimpleCenterlineNode
-    HCATNetwork.edge.BasicEdge
+    HCATNetwork.edge.SimpleCenterlineEdge
     HCATNetwork.draw.styles
     """
     fig: matplotlib.figure.Figure
     ax: matplotlib.axes.Axes
     graph: networkx.Graph
-    def __init__(self, figure: matplotlib.figure.Figure, axes: matplotlib.axes.Axes, graph: networkx.Graph):
-        """Given a NetworkX graph holding a BasicCenterlineGraph, draw it interactively in 2D on the ax Axes contained in the Figure.
+    def __init__(self, figure: matplotlib.figure.Figure, axes: matplotlib.axes.Axes, graph: SimpleCenterlineGraph):
+        """Given a NetworkX graph holding a SimpleCenterlineGraph, draw it interactively in 2D on the ax Axes contained in the Figure.
         """
         self.fig: matplotlib.figure.Figure = figure
         self.ax: matplotlib.axes.Axes = axes
-        self.graph: networkx.Graph = graph
+        self.graph: SimpleCenterlineGraph = graph
         #######
         # Nodes
         #######
-        self.nodes_positions = self.getNodesPositions()
-        self.nodes_r = self.getNodesRadii()
-        self.nodes_distance_from_ostia = self.getNodesDistanceFromOstia()
+        self.nodes_positions = self._get_nodes_positions()
+        self.nodes_r = self._get_nodes_radii()
+        self.nodes_distance_from_ostia = self._get_nodes_distance_from_ostia()
         self.nodes_artist_collectionIndex_to_nodeId_map = numpy.array([n for n in self.graph.nodes])
-        self.nodes_artist: matplotlib.collections.CircleCollection = self.getNodesArtist()
+        self.nodes_artist: matplotlib.collections.CircleCollection = self._get_nodes_artist()
         self.nodes_artist.set_visible(True)
         self.ax.add_collection(self.nodes_artist)
         #######
         # Edges
         #######
         # Edges - basic
-        self.edges_positions = self.getEdgesPositions()
+        self.edges_positions = self._get_edges_positions()
         self.__current_projection_edges_positions = self.edges_positions[:,:,[0,1]] # XY plane
         self.edges_artist_collectionIndex_to_edgeIdAndData_map = numpy.array([(u_,v_,a) for (u_,v_,a) in self.graph.edges(data=True)])
-        self.edges_artist_monocrome: matplotlib.collections.LineCollection = self.getEdgesArtistMonocrome()
+        self.edges_artist_monocrome: matplotlib.collections.LineCollection = self._get_edges_artist_monocrome()
         self.edges_artist_monocrome.set_visible(True)
         self.ax.add_collection(self.edges_artist_monocrome)
         # Edges - colormapped by distance from ostia of the source node
-        self.edges_artist_colormapped_distance: matplotlib.collections.LineCollection = self.getEdgesArtistColormappedDistance()
+        self.edges_artist_colormapped_distance: matplotlib.collections.LineCollection = self._get_edges_artist_colormapped_distance()
         self.edges_artist_colormapped_distance.set_visible(False)
         self.ax.add_collection(self.edges_artist_colormapped_distance)
         # Edges - colormapped by radius of the source node
-        self.edges_artist_colormapped_radius: matplotlib.collections.LineCollection = self.getEdgesArtistColormappedRadius()
+        self.edges_artist_colormapped_radius: matplotlib.collections.LineCollection = self._get_edges_artist_colormapped_radius()
         self.edges_artist_colormapped_radius.set_visible(False)
         self.ax.add_collection(self.edges_artist_colormapped_radius)
         #########
         # Legends
         #########
         # Nodes legend
-        self.legend_artist = self.getLegendArtist()
+        self.legend_artist = self._get_legend_artist()
         self.ax.add_artist(self.legend_artist)
         self.legend_artist.set_visible(True)
         # Edges colormap legend: distance from ostia
-        self.colorbar_edges_colormapped_distance: matplotlib.axes.Axes = self.getEdgesDistanceColorbar()
+        self.colorbar_edges_colormapped_distance: matplotlib.axes.Axes = self._get_edges_distance_colorbar()
         self.colorbar_edges_colormapped_distance.set_visible(False)
         # Edges colormap legend: radius of the connected node
-        self.colorbar_edges_colormapped_radius: matplotlib.axes.Axes = self.getEdgesRadiusColorbar()
+        self.colorbar_edges_colormapped_radius: matplotlib.axes.Axes = self._get_edges_radius_colorbar()
         self.colorbar_edges_colormapped_radius.set_visible(False)
         ##############
         # highlighting
         ##############
         # Node highlighting
-        self.node_highlighted_artist: matplotlib.collections.CircleCollection = self.getNodeHighlightedArtist()
+        self.node_highlighted_artist: matplotlib.collections.CircleCollection = self._get_node_highlighted_artist()
         self.node_highlighted_artist.set_visible(False)
         self.ax.add_collection(self.node_highlighted_artist)
         # Node selection ripples
-        self.node_ripples_artist: matplotlib.collections.CircleCollection = self.__get_ripples_artist()
+        self.node_ripples_artist: matplotlib.collections.CircleCollection = self._get_ripples_artist()
         self.node_ripples_artist.set_visible(False)
         self.ax.add_collection(self.node_ripples_artist)
         ############
         # Text Boxes
         ############
         # Info textbox
-        self.textbox_info_artist: matplotlib.text.Annotation = self.getInfoTextboxArtist()
+        self.textbox_info_artist: matplotlib.text.Annotation = self._get_info_textbox_artist()
         self.ax.add_artist(self.textbox_info_artist)
         self.textbox_info_artist.set_visible(False)
         # Menu textbox
-        self.textbox_artist_menu: matplotlib.offsetbox.AnchoredText = self.getMainMenuTextboxArtist()
+        self.textbox_artist_menu: matplotlib.offsetbox.AnchoredText = self._get_main_menu_artist()
         self.ax.add_artist(self.textbox_artist_menu)
         self.textbox_artist_menu.set_visible(True)
         #####################
@@ -155,7 +155,7 @@ class BasicCenterlineGraphInteractiveDrawer():
             self.colorbar_edges_colormapped_distance,
             self.colorbar_edges_colormapped_radius
         ]
-        self.fig.canvas.mpl_connect("key_press_event", self.on_key_press_event_viewstyle_carousel)
+        self.fig.canvas.mpl_connect("key_press_event", self._on_key_press_event_viewstyle_carousel)
         # View plane projection carousel
         # Key pressed event with key "p" will cycle through the following styles:
         # 0: XY plane
@@ -170,27 +170,27 @@ class BasicCenterlineGraphInteractiveDrawer():
             self.edges_artist_colormapped_distance,
             self.edges_artist_colormapped_radius
         ]
-        self.fig.canvas.mpl_connect("key_press_event", self.on_key_press_event_viewplane_carousel)
+        self.fig.canvas.mpl_connect("key_press_event", self._on_key_press_event_viewplane_carousel)
         # View the image in physical coordinates
         # Key pressed event with key "r" will set the image axis to be the same as physical coordinates
         # meaning that 1 cm on screen will be 1 cm on the axes
-        self.fig.canvas.mpl_connect("key_press_event", self.on_key_press_physical_coordinates)
+        self.fig.canvas.mpl_connect("key_press_event", self._on_key_press_physical_coordinates)
         # Node highlighting and info textbox
         # Mouse click event on a node will highlight it and show its info in the textbox
         # Also, when mpuse is clicked on a node, a ripple animation emanating from the node is shown
         self.node_highlighted_id = None
-        self.fig.canvas.mpl_connect("button_press_event", self.on_left_mouse_button_press_event_node_highlighting)
+        self.fig.canvas.mpl_connect("button_press_event", self._on_left_mouse_button_press_event_node_highlighting)
         # Scroll event
         # Mouse scroll event will move the node highlighting up and down
         # the arterial tree
-        self.fig.canvas.mpl_connect("scroll_event", self.on_mouse_scroll_event_node_highlighting)
+        self.fig.canvas.mpl_connect("scroll_event", self._on_mouse_scroll_event_node_highlighting)
         # Node selection ripples
         # Mouse click event on a node and scroll event will trigger a ripple animation emanating from the node
         self.ripples_animation = None
         self.ripples_animation_n_frames = 30
 
     
-    def getNodesPositions(self) -> numpy.ndarray:
+    def _get_nodes_positions(self) -> numpy.ndarray:
         """Returns a numpy.ndarray of shape (N,3) with the n-th node's coordinates on each row.
         """
         # Memorty allocation
@@ -200,7 +200,7 @@ class BasicCenterlineGraphInteractiveDrawer():
             nodes_positions[i,:] = self.graph.nodes[n]["x"], self.graph.nodes[n]["y"], self.graph.nodes[n]["z"]
         return nodes_positions.astype("float")
     
-    def getNodesRadii(self) -> numpy.ndarray:
+    def _get_nodes_radii(self) -> numpy.ndarray:
         """Returns a numpy.ndarray of shape (n_nodes, ) of nodes radii.
         """
         nodes_radii = numpy.zeros((self.graph.number_of_nodes(),), dtype="float")
@@ -208,7 +208,7 @@ class BasicCenterlineGraphInteractiveDrawer():
             nodes_radii[i] = self.graph.nodes[n]["r"]
         return nodes_radii
     
-    def getNodesArtist(self) -> matplotlib.collections.CircleCollection:
+    def _get_nodes_artist(self) -> matplotlib.collections.CircleCollection:
         """Returns a matplotlib.collections.CircleCollection object with the nodes drawn as circles.
         The circle sizes are proportional to the nodes radii.
         The circle colors are mapped to the nodes arterial tree.
@@ -257,7 +257,7 @@ class BasicCenterlineGraphInteractiveDrawer():
         )
         return nodes_artist
     
-    def getEdgesPositions(self) -> numpy.ndarray:
+    def _get_edges_positions(self) -> numpy.ndarray:
         """Returns a numpy.ndarray of (n_edges, 2, 3) with the n-th edge's coordinates on each row.
         The length is n_edges, one per each edge segment.
         The edge segment is defined as a numpy array of shape (2,3),
@@ -271,7 +271,7 @@ class BasicCenterlineGraphInteractiveDrawer():
             edges_positions[i,1,:] = self.graph.nodes[v_]["x"], self.graph.nodes[v_]["y"], self.graph.nodes[v_]["z"]
         return edges_positions.astype("float")
 
-    def getEdgesArtistMonocrome(self) -> matplotlib.collections.LineCollection:
+    def _get_edges_artist_monocrome(self) -> matplotlib.collections.LineCollection:
         """Returns a matplotlib.collections.LineCollection object with the edges drawn as mono-chromatic lines."""
         line_collection = matplotlib.collections.LineCollection(
             self.__current_projection_edges_positions,
@@ -281,12 +281,12 @@ class BasicCenterlineGraphInteractiveDrawer():
         )
         return line_collection
     
-    def getNodesDistanceFromOstia(self) -> dict[str: float]:
+    def _get_nodes_distance_from_ostia(self) -> dict[str: float]:
         """Returns a dictionary with nodes id as keys, the distance of the node from the ostium as value.
         If two ostia are present, the distance is the minimum of the two.
         """
         node_dist_map = {}
-        ostia = BasicCenterlineGraph.get_coronary_ostia_node_id(graph=self.graph)
+        ostia = self.graph.get_coronary_ostia_node_id()
         for ostium in ostia:
             node_dist_map.update({ostium: 0.0})
             d_ = networkx.single_source_dijkstra_path_length(self.graph, source=ostium, weight="euclidean_distance")
@@ -311,14 +311,14 @@ class BasicCenterlineGraphInteractiveDrawer():
         -------
         numpy.ndarray
         """
-        temp_node_dist_map_ = self.getNodesDistanceFromOstia()
+        temp_node_dist_map_ = self._get_nodes_distance_from_ostia()
         edge_distance_color_map = []
         for (u_,v_) in self.graph.edges(data=False):
             edge_distance_color_map.append(temp_node_dist_map_[u_])
         edge_distance_color_map = numpy.array(edge_distance_color_map)
         return edge_distance_color_map
     
-    def getEdgesArtistColormappedDistance(self) -> matplotlib.collections.LineCollection:
+    def _get_edges_artist_colormapped_distance(self) -> matplotlib.collections.LineCollection:
         """Returns a matplotlib.collections.LineCollection object with the edges drawn as lines with color mapped to the distance from the ostia."""
         # Find distance of each edge's first node from respective ostium
         edge_distance_color_map = self.getEdgesDistanceArray()
@@ -332,7 +332,7 @@ class BasicCenterlineGraphInteractiveDrawer():
         )
         return line_collection
 
-    def getEdgesDistanceColorbar(self) -> matplotlib.axes.Axes:
+    def _get_edges_distance_colorbar(self) -> matplotlib.axes.Axes:
         """Returns a matplotlib.axes.Axes object (inset in self.ax) with the colorbar for the edges distance from ostia."""
         distances = self.getEdgesDistanceArray()
         ax_ = self.ax.inset_axes(
@@ -363,7 +363,7 @@ class BasicCenterlineGraphInteractiveDrawer():
         )
         return ax_
 
-    def getEdgesArtistColormappedRadius(self) -> matplotlib.collections.LineCollection:
+    def _get_edges_artist_colormapped_radius(self) -> matplotlib.collections.LineCollection:
         """Returns a matplotlib.collections.LineCollection object with the edges drawn as lines with color mapped to the radius of the first node."""
         # Find distance of each edge's first node from respective ostium
         edge_node_radii_color_map = numpy.array(
@@ -379,7 +379,7 @@ class BasicCenterlineGraphInteractiveDrawer():
         )
         return line_collection
 
-    def getEdgesRadiusColorbar(self):
+    def _get_edges_radius_colorbar(self):
         """Returns a matplotlib.axes.Axes object (inset in self.ax) with the colorbar for the radius of the first node of each edge."""        
         edge_node_radii_color_map = numpy.array(
             [self.graph.nodes[u_]["r"] for (u_,_) in self.graph.edges(data=False)]
@@ -412,7 +412,7 @@ class BasicCenterlineGraphInteractiveDrawer():
         )
         return ax_
 
-    def getLegendArtist(self) -> matplotlib.legend.Legend:
+    def _get_legend_artist(self) -> matplotlib.legend.Legend:
         legend_elements = [
             Line2D([0], [0], marker='o', markerfacecolor=NODE_FACECOLOR_RCA, color=INFO_BOX_FACECOLOR,   markersize=10, lw=0),
             Line2D([0], [0], marker='o', markerfacecolor=NODE_FACECOLOR_LCA, color=INFO_BOX_FACECOLOR,   markersize=10, lw=0),
@@ -446,7 +446,7 @@ class BasicCenterlineGraphInteractiveDrawer():
         )
         return legend_artist
 
-    def getNodeHighlightedArtist(self) -> matplotlib.collections.CircleCollection:
+    def _get_node_highlighted_artist(self) -> matplotlib.collections.CircleCollection:
         """Returns a matplotlib.collections.CircleCollection object with the highlighting effect artist.
         """
         offset_zero_ = self.nodes_positions[0,[0,1]]
@@ -462,7 +462,7 @@ class BasicCenterlineGraphInteractiveDrawer():
         )
         return node_highlighted_artist
 
-    def getInfoTextboxArtist(self) -> matplotlib.text.Annotation:
+    def _get_info_textbox_artist(self) -> matplotlib.text.Annotation:
         """Returns a matplotlib.text.Annotation object with the information text.
         The textbox is not visible by default.
         The textbox is populated with the default debug string.
@@ -517,7 +517,7 @@ class BasicCenterlineGraphInteractiveDrawer():
             text += f"\n{k}:  {ktext}"
         return text
     
-    def getMainMenuTextboxArtist(self) -> matplotlib.offsetbox.AnchoredText:
+    def _get_main_menu_artist(self) -> matplotlib.offsetbox.AnchoredText:
         """Returns a matplotlib.offsetbox.AnchoredText artist anchored to the lower right corner of
         the axes with the menu information.
         The textbox is always visible on top of everything (zorder 5.0).
@@ -558,7 +558,7 @@ class BasicCenterlineGraphInteractiveDrawer():
 
     # Interactive effects
 
-    def on_key_press_event_viewstyle_carousel(self, event: matplotlib.backend_bases.KeyEvent):
+    def _on_key_press_event_viewstyle_carousel(self, event: matplotlib.backend_bases.KeyEvent):
         if event.key == "n":
             # Set all elements' and legends artists to invisible
             for artist_list, legend in zip(self.viewstyle_carousel_artists_cycler, self.viewstyle_carousel_legends_cycler):
@@ -573,7 +573,7 @@ class BasicCenterlineGraphInteractiveDrawer():
             # Draw changes
             self.fig.canvas.draw_idle()
     
-    def on_key_press_event_viewplane_carousel(self, event: matplotlib.backend_bases.KeyEvent):
+    def _on_key_press_event_viewplane_carousel(self, event: matplotlib.backend_bases.KeyEvent):
         if event.key == "p":
             # Data
             self.viewplane_carousel_current_index = (self.viewplane_carousel_current_index + 1) % len(self.viewplane_carousel_planes_list)
@@ -609,7 +609,7 @@ class BasicCenterlineGraphInteractiveDrawer():
             # Draw changes
             self.fig.canvas.draw_idle()
 
-    def on_key_press_physical_coordinates(self, event: matplotlib.backend_bases.KeyEvent):
+    def _on_key_press_physical_coordinates(self, event: matplotlib.backend_bases.KeyEvent):
         """This function makes correspond one cm on screen with one cm in real life.
         """
         if event.key == "r":
@@ -654,7 +654,7 @@ class BasicCenterlineGraphInteractiveDrawer():
         elif node['topology_class'].value == ArteryPointTopologyClass.ENDPOINT.value:
             annotation_text += f"Branch endpoint\n"
         # - distance from ostium/ostia
-        ostia = BasicCenterlineGraph.get_relative_coronary_ostia_node_id(graph=self.graph, node_id=node_id)
+        ostia = self.graph.get_relative_coronary_ostia_node_id(node_id=node_id)
         if len(ostia) == 1:
             distance = networkx.shortest_path_length(self.graph, source=ostia[0], target=node_id, weight="euclidean_distance")
             annotation_text += f"Distance from ostium:\n{distance: 8.3f} mm"
@@ -691,7 +691,7 @@ class BasicCenterlineGraphInteractiveDrawer():
         self.textbox_info_artist.shrinkB=0.0
         self.textbox_info_artist.set_visible(True)
 
-    def __get_ripples_artist(self) -> matplotlib.collections.CircleCollection:
+    def _get_ripples_artist(self) -> matplotlib.collections.CircleCollection:
         """Get the Circle artist to draw the ripples.
         Same zorder as the highlight artist.
         """
@@ -745,7 +745,7 @@ class BasicCenterlineGraphInteractiveDrawer():
             self.node_ripples_artist.set_visible(False)
         return self.node_ripples_artist,
 
-    def on_left_mouse_button_press_event_node_highlighting(self, event: matplotlib.backend_bases.MouseEvent):
+    def _on_left_mouse_button_press_event_node_highlighting(self, event: matplotlib.backend_bases.MouseEvent):
         """Node highlighting and textbox display on a double left mouse click.
         """
         # If not double-click, do not consider it
@@ -803,7 +803,7 @@ class BasicCenterlineGraphInteractiveDrawer():
         self.node_ripples_artist.set_visible(False)
         return
 
-    def on_mouse_scroll_event_node_highlighting(self, event: matplotlib.backend_bases.MouseEvent):
+    def _on_mouse_scroll_event_node_highlighting(self, event: matplotlib.backend_bases.MouseEvent):
         """When the mouse scrolls, if a node is highlighted, change node with the one up or down the tree
         and update the textbox and highlight.
         """
@@ -864,7 +864,7 @@ class BasicCenterlineGraphInteractiveDrawer():
             self.node_ripples_artist.set_visible(False)
 
  
-def drawCenterlinesGraph2D(graph: networkx.Graph, backend: str = "hcatnetwork"):
+def draw_simple_centerlines_graph_2d(graph: networkx.Graph | SimpleCenterlineGraph, backend: str = "hcatnetwork"):
     """Draws the Coronary Artery tree centerlines in an interactive way.
     
     Parameters
@@ -872,8 +872,8 @@ def drawCenterlinesGraph2D(graph: networkx.Graph, backend: str = "hcatnetwork"):
     graph : networkx.Graph
         The graph to draw. Assumes this kind of dictionaries:
             nodes: HCATNetwork.node.SimpleCenterlineNode
-            edges: HCATNetwork.edge.BasicEdge
-            graph: HCATNetwork.graph.BasicCenterlineGraph
+            edges: HCATNetwork.edge.SimpleCenterlineEdge
+            graph: HCATNetwork.graph.SimpleCenterlineGraph
     backend : str, optional = ["hcatnetwork", "networkx", "debug"]
         The backend to use for drawing. 
             "hcatnetwork": uses the HCATNetwork library to draw the graph interactively. Its backend is matplotlib.
@@ -913,7 +913,19 @@ def drawCenterlinesGraph2D(graph: networkx.Graph, backend: str = "hcatnetwork"):
         #############
         # HCATNETWORK
         #############
-        drawer = BasicCenterlineGraphInteractiveDrawer(fig, ax, graph)
+        # Convert to a SimpleCenterlineGraph
+        if isinstance(graph, networkx.Graph):
+            try:
+                graph = SimpleCenterlineGraph.from_networkx_graph(graph)
+            except TypeError | ValueError | AttributeError | RuntimeError  as e:
+                raise RuntimeError(
+                    f"Could not convert the graph into a SimpleCenterlineGraph, which is needed\
+                    for the visualization with the default \"hcatnetwork\" backend.\n\
+                    Try using another backend, such as backend=\"networkx\" or backend=\"debug\"\n\
+                    Error:\n{e}"
+                )
+        # Draw the graph
+        drawer = SimpleCenterlineGraphInteractiveDrawer(fig, ax, graph)
     elif backend == "networkx":
         #############
         # NETWORKX
@@ -1012,13 +1024,13 @@ def drawCenterlinesGraph2D(graph: networkx.Graph, backend: str = "hcatnetwork"):
 
 
 
-
-def drawCenterlinesGraph3D(graph):
+##### yet incomplete
+def draw_centerlines_graph_3d(graph):
     """ NOT READY YET, DO NOT USE
     Assumes this kind on dictionaries:
         nodes: HCATNetwork.node.SimpleCenterlineNode
-        edges: HCATNetwork.edge.BasicEdge
-        graph: HCATNetwork.graph.BasicCenterlineGraph
+        edges: HCATNetwork.edge.SimpleCenterlineEdge
+        graph: HCATNetwork.graph.SimpleCenterlineGraph
     """
     ax = plt.subplot(111, projection="3d")
     # plot nodes
@@ -1042,7 +1054,7 @@ def drawCenterlinesGraph3D(graph):
         else:
             c_out.append(NODE_EDGEECOLOR_DEFAULT)
             s_out.append(0.0)
-        positions.append(n_.getVertexList())
+        positions.append(n_.get_vertex_list())
     # - convert to numpy
     c_in  = numpy.array(c_in)
     c_out = numpy.array(c_out)
@@ -1074,8 +1086,8 @@ def drawCenterlinesGraph3D(graph):
     # plot undirected edges
     segs = []
     for u_,v_,a in graph.edges(data=True):
-        uu = SimpleCenterlineNode(**(graph.nodes[u_])).getVertexList()
-        vv = SimpleCenterlineNode(**(graph.nodes[v_])).getVertexList()
+        uu = SimpleCenterlineNode(**(graph.nodes[u_])).get_vertex_list()
+        vv = SimpleCenterlineNode(**(graph.nodes[v_])).get_vertex_list()
         segs.append(numpy.array([uu[:3],vv[:3]]))
     line_segments = Line3DCollection(segs, zorder=1, linewidth=0.4, color=EDGE_FACECOLOR_DEFAULT)
     ax.add_collection(line_segments)
@@ -1110,7 +1122,7 @@ if __name__ == "__main__":
     f_prova = "C:\\Users\\lecca\\Desktop\\AAMIASoftwares-research\\Data\\CAT08\\CenterlineGraphs_FromReference\\dataset00.GML"
     from ..graph import load_graph
     g_ = load_graph(f_prova)
-    drawCenterlinesGraph2D(graph=g_)
-    drawCenterlinesGraph2D(graph=g_, backend="networkx")
-    drawCenterlinesGraph2D(graph=g_, backend="debug")
-    #drawCenterlinesGraph3D(graph=g_)
+    draw_simple_centerlines_graph_2d(graph=g_)
+    draw_simple_centerlines_graph_2d(graph=g_, backend="networkx")
+    draw_simple_centerlines_graph_2d(graph=g_, backend="debug")
+    #draw_centerlines_graph_3d(graph=g_)

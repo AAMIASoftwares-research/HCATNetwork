@@ -28,7 +28,7 @@ import networkx
 
 from ..core.core import CoreDict
 from ..node.node import SimpleCenterlineNode, ArteryPointTopologyClass, ArteryPointTree
-from ..edge.edge import BasicEdge
+from ..edge.edge import SimpleCenterlineEdge
 from ..utils.slicer import numpy_array_to_open_curve_json, numpy_array_to_fiducials_json
 
 ###################################
@@ -217,16 +217,16 @@ def load_graph(file_path: str, graph_type: type | None = None) -> networkx.class
 # Basic Centerline Graph
 ########################
 
-class BasicCenterlineGraph(CoreDict):
+class SimpleCenterlineGraph(CoreDict):
     """The basic centerline graph static dictionary.
 
     There is no way of hard-imposing it in python, but the graph should contain:
         * nodes of type HCATNetwork.node.SimpleCenterlineNode,
-        * edges of type HCATNetwork.edge.BasicEdge.
+        * edges of type HCATNetwork.edge.SimpleCenterlineEdge.
 
     Both trees (left and right) are stored in the same NetworkX.Graph structure.
     In some patients, it could happen that the left and right subgraphs are not disjointed, hence the need to have just one graph.
-    BasicCenterlineGraph, and all its connected algorithm, assumes that the coronary ostia are disjointed, meaning that the 
+    SimpleCenterlineGraph, and all its connected algorithm, assumes that the coronary ostia are disjointed, meaning that the 
     coronary ostia should not be overlapping or too near to each other. No control is actively performed to check this condition.
     
     Keys
@@ -327,7 +327,7 @@ class BasicCenterlineGraph(CoreDict):
         
         """  
         segments = []
-        for start_node_id in BasicCenterlineGraph.get_coronary_ostia_node_id(graph):
+        for start_node_id in SimpleCenterlineGraph.get_coronary_ostia_node_id(graph):
             # Fore each node, get the successor of the node starting from the ostium
             breadth_first_search_successors_from_ostium = {key: val for (key, val) in networkx.bfs_successors(graph, start_node_id)}
             next_buffer_list: list = breadth_first_search_successors_from_ostium[start_node_id]
@@ -382,7 +382,7 @@ class BasicCenterlineGraph(CoreDict):
         # Create the subgraph, copying the info from the original graph
         subgraph = networkx.Graph(**graph.graph)
         # Get the segments
-        segments = BasicCenterlineGraph.get_anatomic_segments(graph)
+        segments = SimpleCenterlineGraph.get_anatomic_segments(graph)
         # Add the nodes
         for segment in segments:
             if not segment[0] in subgraph.nodes:
@@ -391,9 +391,9 @@ class BasicCenterlineGraph(CoreDict):
                 subgraph.add_node(segment[1], **graph.nodes[segment[1]])
         # Add the edges
         for segment in segments:
-            edge_features = BasicEdge()
+            edge_features = SimpleCenterlineEdge()
             edge_features["euclidean_distance"] = networkx.algorithms.shortest_path_length(graph, segment[0], segment[1], weight="euclidean_distance")
-            edge_features.updateWeightFromEuclideanDistance()
+            edge_features.update_weight_from_euclidean_distance()
             subgraph.add_edge(segment[0], segment[1], **edge_features)
         # Done
         return subgraph
@@ -421,7 +421,7 @@ class BasicCenterlineGraph(CoreDict):
         # Create the new graph, copying the info from the original graph
         graph_new = networkx.Graph(**graph.graph)
         # Get the anatomic segments of the original graph
-        segments = BasicCenterlineGraph.get_anatomic_segments(graph)
+        segments = SimpleCenterlineGraph.get_anatomic_segments(graph)
         # - consider each segment only once, needed for patients with non-disjointed left and right trees
         # - we do not want to resample the same segment twice
         segments = list(set(segments)) 
@@ -445,11 +445,11 @@ class BasicCenterlineGraph(CoreDict):
                 # Add the edge
                 # Here, the edge's property "euclidean_distance" is the actual distance between the nodes.
                 if not graph_new.has_edge(n0, n1):
-                    edge_features = BasicEdge()
+                    edge_features = SimpleCenterlineEdge()
                     n0_p = numpy.array([graph.nodes[n0]["x"], graph.nodes[n0]["y"], graph.nodes[n0]["z"]])
                     n1_p = numpy.array([graph.nodes[n1]["x"], graph.nodes[n1]["y"], graph.nodes[n1]["z"]])
                     edge_features["euclidean_distance"] = numpy.linalg.norm(n0_p - n1_p)
-                    edge_features.updateWeightFromEuclideanDistance()
+                    edge_features.update_weight_from_euclidean_distance()
                     graph_new.add_edge(n0, n1, **edge_features)
             else:
                 distances_to_sample = numpy.linspace(0, length, n_nodes)
@@ -483,7 +483,7 @@ class BasicCenterlineGraph(CoreDict):
                         # make sure no new nodes have the same id
                         node_id_counter += 1
                     node_features = SimpleCenterlineNode()
-                    node_features.setVertex(position_new_)
+                    node_features.set_vertex(position_new_)
                     node_features["r"] = radius_new_
                     node_features["t"] = 0.0
                     node_features["topology_class"] = ArteryPointTopologyClass.SEGMENT
@@ -499,11 +499,11 @@ class BasicCenterlineGraph(CoreDict):
                     n0 = nodes_ids_to_connect_in_sequence_list[i]
                     n1 = nodes_ids_to_connect_in_sequence_list[i + 1]
                     if not graph_new.has_edge(n0, n1):
-                        edge_features = BasicEdge()
+                        edge_features = SimpleCenterlineEdge()
                         n0_p = numpy.array([graph_new.nodes[n0]["x"], graph_new.nodes[n0]["y"], graph_new.nodes[n0]["z"]])
                         n1_p = numpy.array([graph_new.nodes[n1]["x"], graph_new.nodes[n1]["y"], graph_new.nodes[n1]["z"]])
                         edge_features["euclidean_distance"] = numpy.linalg.norm(n0_p - n1_p)
-                        edge_features.updateWeightFromEuclideanDistance()
+                        edge_features.update_weight_from_euclidean_distance()
                         graph_new.add_edge(n0, n1, **edge_features)
         return graph_new
     
@@ -547,7 +547,7 @@ class BasicCenterlineGraph(CoreDict):
             if graph.nodes[n]['topology_class'] == ArteryPointTopologyClass.ENDPOINT:
                 endpoint_node_id = n
                 # get coronary ostium node id that is connected to this endpoint
-                ostia_node_id = BasicCenterlineGraph.get_relative_coronary_ostia_node_id(graph, endpoint_node_id)
+                ostia_node_id = SimpleCenterlineGraph.get_relative_coronary_ostia_node_id(graph, endpoint_node_id)
                 for ostium_node_id in ostia_node_id:
                     # continue if the returned ostium is None
                     if ostia_node_id is None:
@@ -670,27 +670,27 @@ if __name__ == "__main__":
     print("Running 'HCATNetwork.graph' module")
     
     # Load a coronary artery tree graph
-    from ..draw.draw import drawCenterlinesGraph2D
+    from ..draw.draw import draw_simple_centerlines_graph_2d
     f_prova = "C:\\Users\\lecca\\Desktop\\AAMIASoftwares-research\\Data\\CAT08\\CenterlineGraphs_FromReference\\dataset00.GML"
     g_ = load_graph(f_prova)
     
     # Get the anatomic segments
     if 0:
-        segments = BasicCenterlineGraph.get_anatomic_segments(g_)
-        drawCenterlinesGraph2D(segments)
+        segments = SimpleCenterlineGraph.get_anatomic_segments(g_)
+        draw_simple_centerlines_graph_2d(segments)
     
     # Get the anatomic subgraph
     if 0:
-        subgraph = BasicCenterlineGraph.get_anatomic_subgraph(g_)
-        drawCenterlinesGraph2D(subgraph)
+        subgraph = SimpleCenterlineGraph.get_anatomic_subgraph(g_)
+        draw_simple_centerlines_graph_2d(subgraph)
 
     # Resample the graph
     if 0:
-        reampled_graph = BasicCenterlineGraph.resample_coronary_artery_tree(
+        reampled_graph = SimpleCenterlineGraph.resample_coronary_artery_tree(
             graph=g_,
             mm_between_nodes=0.5
         )
-        drawCenterlinesGraph2D(reampled_graph)
+        draw_simple_centerlines_graph_2d(reampled_graph)
 
     # Convert to 3D Slicer open curve
 
@@ -698,7 +698,7 @@ if __name__ == "__main__":
         # Graph
         g_prova = "C:\\Users\\lecca\\Desktop\\AAMIASoftwares-research\\Data\\ASOCA\\normal_prova\\CTCA\\Normal_01_0.5mm.GML"
         g_ = load_graph(g_prova)
-        # drawCenterlinesGraph2D(g_)
+        # draw_simple_centerlines_graph_2d(g_)
 
         # Image
         import SimpleITK as sitk
@@ -729,14 +729,14 @@ if __name__ == "__main__":
 
 
         if 1:
-            BasicCenterlineGraph.convert_to_3dslicer_opencurve(
+            SimpleCenterlineGraph.convert_to_3dslicer_opencurve(
                 graph=g_,
                 save_directory=folder,
                 affine_transformation_matrix=affine_asoca
             )
         # Convert to 3D Slicer fiducials
         if 1:
-            BasicCenterlineGraph.convert_to_3dslicer_fiducials(
+            SimpleCenterlineGraph.convert_to_3dslicer_fiducials(
                 graph=g_,
                 save_filename=fname_fiducials,
                 affine_transformation_matrix=affine_asoca

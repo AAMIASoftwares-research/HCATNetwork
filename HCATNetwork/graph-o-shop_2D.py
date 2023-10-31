@@ -19,7 +19,7 @@ import mpl_toolkits
 import PyQt6.QtGui
 # imports - my modules
 from .node import SimpleCenterlineNode, ArteryPointTopologyClass, ArteryPointTree
-from .edge import BasicEdge
+from .edge import SimpleCenterlineEdge
 from .draw.styles import (NODE_FACECOLOR_LCA, NODE_FACECOLOR_RCA, NODE_EDGEECOLOR_DEFAULT, 
                           NODE_EDGEECOLOR_END, NODE_EDGEECOLOR_CROSS, NODE_EDGEECOLOR_START, 
                           EDGE_FACECOLOR_DEFAULT)

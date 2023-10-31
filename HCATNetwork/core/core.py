@@ -51,20 +51,20 @@ class CoreDict(UserDict):
         else:
             raise KeyError(f"Invalid key. {key} is not part of the allowed keys: {self.__annotations__} ")
     
-    def keyOf(self, value):
+    def key_of(self, value):
         """Returns the first matching key for the given value"""
         for k, v in self.items():
             if v == value:
                 return k
         raise ValueError(value)
 
-    def keysOf(self, value):
+    def keys_of(self, value):
         """Returns all the matching keys for the given value"""
         for k, v in self.items():
             if v == value:
                 yield k
 
-    def isValid(self) -> bool:
+    def is_valid(self) -> bool:
         """
         Asserts validity of the dictionary for graph purposes,
         which means that no dictionary values must be "None" when creating a dictionary
@@ -78,18 +78,18 @@ class CoreDict(UserDict):
 
 
 # Utilities - dict structure
-def keyOf(d: dict | CoreDict, value):
+def key_of(d: dict | CoreDict, value):
     for k, v in d.items():
         if v == value:
             return k
     raise ValueError(value)
 
-def keysOf(d: dict | CoreDict, value):
+def keys_of(d: dict | CoreDict, value):
     for k, v in d.items():
         if v == value:
             yield k
 
-def assertDictionaryValidity(dictionary: dict | CoreDict) -> bool:
+def assert_dictionary_validity(dictionary: dict | CoreDict) -> bool:
     for v in dictionary.values():
         if v is None:
             return False

@@ -3,4 +3,4 @@ sys.path.append(package_parent_dir.dir)
 
 import HCATNetwork
 
-print(HCATNetwork.edge.BasicEdge_KeysList)
+print(HCATNetwork.edge.SimpleCenterlineEdge_KeysList)

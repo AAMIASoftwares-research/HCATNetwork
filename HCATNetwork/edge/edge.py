@@ -32,17 +32,17 @@ The weight standard parameter is set equal to the signed distance.
 To run as a module, activate the venv, go inside the HCATNetwork parent directory,
 and use: python -m HCATNetwork.edge.edge
 """
-class BasicEdge(CoreDict):
+class SimpleCenterlineEdge(CoreDict):
     weight: float
     euclidean_distance: float
 
-    def updateWeightFromEuclideanDistance(self) -> None:
+    def update_weight_from_euclidean_distance(self) -> None:
         if self["euclidean_distance"] is not None:
             self.__setitem__("weight", abs(self.__getitem__("euclidean_distance")) )
         else:
             raise ValueError("euclidean_distance is currently None")
     
-    def updateEuclideanDistanceFromWeight(self) -> None:
+    def update_euclidean_distance_from_weight(self) -> None:
         if self["weight"] is not None:
             self.__setitem__("weight", abs(self.__getitem__("weight")) )
         else:
@@ -54,7 +54,7 @@ class BasicEdge(CoreDict):
 if __name__ == "__main__":
     print("Running 'HCATNetwork.edge' module")
 
-    d = BasicEdge()
+    d = SimpleCenterlineEdge()
     d["weight"] = 0.9
-    print(d.isValid())
+    print(d.is_valid())
     print(d, type(d))
