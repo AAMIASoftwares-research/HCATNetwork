@@ -177,8 +177,8 @@ def numpy_array_to_fiducials_json(arr: numpy.ndarray, labels: list[str] | None =
 # SimpleCenterlineGraph
 #######################
 
-from ....hcatnetwork.node import ArteryNodeTopology, ArteryNodeSide
-from ....hcatnetwork.graph import SimpleCenterlineGraph
+from ...node.node import ArteryNodeTopology, ArteryNodeSide
+from ...graph.graph import SimpleCenterlineGraph
 
 def convert_graph_to_3dslicer_opencurve(graph: SimpleCenterlineGraph, save_directory: str, affine_transformation_matrix: numpy.ndarray | None = None) -> None:
     """This function converts each segment, from ostium to endpoint, into an open curve
@@ -308,3 +308,7 @@ def convert_graph_to_3dslicer_fiducials(graph: SimpleCenterlineGraph, save_filen
     f = open(save_filename, "w")
     f.write(file_content_str)
     f.close()
+
+
+if __name__ == "__main__":
+    print("hcatnetwork.utils.slicer.slicer")

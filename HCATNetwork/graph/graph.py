@@ -20,8 +20,6 @@ and use: python -m hcatnetwork.graph.graph
 """
 from __future__ import annotations
 
-import os, copy, json
-from datetime import datetime, timezone
 from enum import Enum, auto
 import numpy
 import networkx
@@ -29,7 +27,6 @@ import networkx
 from ..core.core import CoreDict, TYPE_NAME_TO_TYPE_DICT
 from ..node.node import SimpleCenterlineNodeAttributes, ArteryNodeTopology, ArteryNodeSide
 from ..edge.edge import SimpleCenterlineEdgeAttributes
-from ..utils.slicer import numpy_array_to_open_curve_json, numpy_array_to_fiducials_json
 
 ###################################
 # LOADING and SAVING to text files
@@ -515,6 +512,7 @@ if __name__ == "__main__":
     print("Running 'hcatnetwork.graph' module")
     
     # Load a coronary artery tree graph and plot it
+    import os
     from ..io.io import load_graph
     from ..io.SimpleCenterlineGraph import load_graph as SimpleCenterlineGraph_load_graph
     from ..draw.draw import draw_simple_centerlines_graph_2d
@@ -544,7 +542,7 @@ if __name__ == "__main__":
         draw_simple_centerlines_graph_2d(subgraph)
 
     # Resample the graph
-    if 0:
+    if 1:
         import time
         _t_s = time.time()
         reampled_graph = g_.resample_coronary_artery_tree(
