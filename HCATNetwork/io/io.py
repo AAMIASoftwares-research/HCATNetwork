@@ -18,11 +18,9 @@ from ..node.node import SimpleCenterlineNodeAttributes, ArteryNodeTopology, Arte
 from ..edge.edge import SimpleCenterlineEdgeAttributes
 from ..graph.graph import SimpleCenterlineGraph
 
-###################################
-# LOADING and SAVING to text files
-###################################
-
-
+#########
+# SAVING 
+#########
 
 def save_graph(
         graph: networkx.classes.graph.Graph|
@@ -176,6 +174,11 @@ def save_graph(
     # Cleanup deepcopied graph that was useful just for saving it
     del graph
 
+
+#########
+# LOADING 
+#########
+
 def load_enums(node, key, enum_class) -> Enum:
     out = None
     for d_ in enum_class:
@@ -186,7 +189,7 @@ def load_enums(node, key, enum_class) -> Enum:
         raise ValueError(f"Error in loading graph nodes data: {type(enum_class)} does not have {node[key]} member.")
     return out
 
-def load_graph(file_path: str) -> networkx.classes.graph.Graph:
+def load_graph_networkx_output(file_path: str) -> networkx.classes.graph.Graph:
     """Loads the graph from gml format using the networkx interface.
     
     The loading function will attempt to recover the original data types of the
@@ -273,3 +276,100 @@ def load_graph(file_path: str) -> networkx.classes.graph.Graph:
     # Done
     return graph
 
+def load_graph_simple_centerline_graph_output(file_path: str) -> SimpleCenterlineGraph:
+    """Loads the graph from GML format using the networkx interface.
+    
+    The loading function will attempt to recover the original data types of the
+    attributes of edges, nodes, and graph.
+    No sign of the conversion is left behind on the loaded graph, as well as the conversion dictionaries.
+
+    Parameters
+    ----------
+    file_path : str
+        The path to the file where the graph is saved as GML.
+
+    Returns
+    -------
+    SimpleCenterlineGraph
+        The loaded graph.
+
+    Raises
+    ------
+    ValueError
+        If any feature of the graph, node or edge is None.
+
+    See Also
+    --------
+    hcatnetwork.io.io.load_graph_networkx_output()
+    """
+    graph = load_graph_networkx_output(file_path)
+    graph = SimpleCenterlineGraph.from_networkx_graph(graph)
+    return graph
+
+_load_graph_output_type_function_overload_map = {
+    networkx.classes.graph.Graph: load_graph_networkx_output,
+    SimpleCenterlineGraph: load_graph_simple_centerline_graph_output
+}
+
+def load_graph(file_path: str, output_type: type) -> (networkx.classes.graph.Graph| SimpleCenterlineGraph):
+    """Loads the graph from GML format using the networkx interface.
+    
+    The loading function will attempt to recover the original data types of the
+    attributes of edges, nodes, and graph.
+    No sign of the conversion is left behind on the loaded graph, as well as the conversion dictionaries.
+
+    Parameters
+    ----------
+    file_path : str
+        The path to the file where the graph is saved as GML.
+    output_type : type
+        The type of graph to be returned.
+
+    Returns
+    -------
+    networkx.classes.graph.Graph|
+    networkx.classes.digraph.DiGraph|
+    networkx.classes.multigraph.MultiGraph|
+    networkx.classes.multidigraph.MultiDiGraph|
+    SimpleCenterlineGraph
+        The loaded graph.
+    
+    Raises
+    ------
+    ValueError
+        If any feature of the graph, node or edge is None.
+
+    See Also
+    --------
+    networkx.read_gml()
+    """
+    if not output_type in _load_graph_output_type_function_overload_map:
+        raise TypeError(f"Error in loading graph: {output_type} is not a supported output type.")
+    return _load_graph_output_type_function_overload_map[output_type](file_path)
+    
+
+
+
+
+
+
+
+
+
+
+
+if __name__ == "__main__":
+    print("Running hcatnetwork.io.io")
+
+    def mia(a: int):
+        print(a, "is an integer")
+
+    def mia(b: float):
+        print(b, "is a float")
+
+    def mia(c: str):
+        print(c, "is a string")
+
+    mia(1)
+    mia(1.0)
+    mia("1")    

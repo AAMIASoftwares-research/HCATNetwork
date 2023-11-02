@@ -173,6 +173,10 @@ def numpy_array_to_fiducials_json(arr: numpy.ndarray, labels: list[str] | None =
     json_string = json.dumps(slicer_dict, indent=4)
     return json_string
 
+## to do:
+## Add utility to load a3d slicer open curve json file and
+## convert it into a numpy array
+
 #######################
 # SimpleCenterlineGraph
 #######################
@@ -310,5 +314,20 @@ def convert_graph_to_3dslicer_fiducials(graph: SimpleCenterlineGraph, save_filen
     f.close()
 
 
+
+## to do:
+## Add utility to load a 3d slicer open curve json file and
+## add it to a graph
+
+
+
+
+
+
+
+
+#################
+# Test
+#################
 if __name__ == "__main__":
     print("hcatnetwork.utils.slicer.slicer")
