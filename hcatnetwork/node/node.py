@@ -100,13 +100,13 @@ class SimpleCenterlineNodeAttributes(VertexNodeAttributes):
     r: float
     arterial_tree: ArteryNodeSide
 
-    def get_vertex_radius_list(self):
+    def get_vertex_and_radius_list(self):
         return self.get_vertex_list().extend(self.__getitem__("r"))
 
-    def get_vertex_radius_numpy_array(self):
-        return numpy.array(self.get_vertex_radius_list())
+    def get_vertex_and_radius_numpy_array(self):
+        return numpy.array(self.get_vertex_and_radius_list())
 
-    def set_vertexRadius(self, v: float | list | numpy.ndarray):
+    def set_vertex_and_radius(self, v: float | list | numpy.ndarray):
         if isinstance(v, float):
             v = [v]
         if len(v) == 0 or len(v) > 4:
