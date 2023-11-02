@@ -15,7 +15,7 @@ a dictionary key for the specific meaning.
 For example, if the weight is intended as a node-to-node distance in 3D space, then the dict should contain
 both "weight" and "distance" or "distance_euclidean" or whatever.
 """
-from ..core.core import CoreDict
+from ..core.core import CoreDict, TYPE_NAME_TO_TYPE_DICT
 
 ####################
 # Common utilities
@@ -32,7 +32,8 @@ The weight standard parameter is set equal to the signed distance.
 To run as a module, activate the venv, go inside the HCATNetwork parent directory,
 and use: python -m hcatnetwork.edge.edge
 """
-class SimpleCenterlineEdgeFeatures(CoreDict):
+
+class SimpleCenterlineEdgeAttributes(CoreDict):
     weight: float
     euclidean_distance: float
 
@@ -49,12 +50,17 @@ class SimpleCenterlineEdgeFeatures(CoreDict):
             raise ValueError("weight is currently None")
     
 
+###########
+# Add types
+###########
+
+TYPE_NAME_TO_TYPE_DICT["SimpleCenterlineEdgeAttributes"] = SimpleCenterlineEdgeAttributes
 
 
 if __name__ == "__main__":
     print("Running 'hcatnetwork.edge' module")
 
-    d = SimpleCenterlineEdgeFeatures()
+    d = SimpleCenterlineEdgeAttributes()
     d["weight"] = 0.9
     print(d.is_valid())
     print(d, type(d))

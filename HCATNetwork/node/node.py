@@ -19,7 +19,7 @@ and use: python -m hcatnetwork.node.node
 import itertools
 from enum import Enum, auto
 import numpy
-from ..core.core import CoreDict
+from ..core.core import CoreDict, TYPE_NAME_TO_TYPE_DICT
 
 ####################
 # Common utilities
@@ -32,7 +32,10 @@ from ..core.core import CoreDict
 """
 A vertex node is a node defined by just its label and x, y, z positions
 """
-class VertexNodeFeatures(CoreDict):
+
+TYPE_NAME_TO_TYPE_DICT["VertexNodeAttributes"] = "VertexNodeAttributes"
+
+class VertexNodeAttributes(CoreDict):
     x: float
     y: float 
     z: float
@@ -76,6 +79,10 @@ with no added complexity.
 - "tree" must be one of the string literals defined in the following enum: ["r", "l", "b"], where "b" stands for "both"
     (there are some heart structures in which the coronary arteries from left and right side branches merge together)
 """
+TYPE_NAME_TO_TYPE_DICT["ArteryNodeTopology"] = "ArteryNodeTopology"
+TYPE_NAME_TO_TYPE_DICT["ArteryNodeSide"] = "ArteryNodeSide"
+TYPE_NAME_TO_TYPE_DICT["SimpleCenterlineNodeAttributes"] = "SimpleCenterlineNodeAttributes"
+
 class ArteryNodeTopology(Enum):
     OSTIUM = auto()
     SEGMENT = auto()
@@ -87,7 +94,7 @@ class ArteryNodeSide(Enum):
     LEFT = auto()
     RL = auto()
 
-class SimpleCenterlineNodeFeatures(VertexNodeFeatures):
+class SimpleCenterlineNodeAttributes(VertexNodeAttributes):
     topology_class: ArteryNodeTopology
     t: float
     r: float
@@ -118,14 +125,30 @@ class SimpleCenterlineNodeFeatures(VertexNodeFeatures):
 This is the "most complete" node, with everything that is needed and that might be needed in the future.
 This is the only node actively maintained and that will be used in the future.
 """
+TYPE_NAME_TO_TYPE_DICT["HeartCoronaryArteryNodeAttributes"] = "HeartCoronaryArteryNodeAttributes"
 
-class HeartCoronaryArteryNodeFeatures(CoreDict): # ["this is the most complete dict you can think of"]
+class HeartCoronaryArteryNodeAttributes(CoreDict): # ["this is the most complete dict you can think of"]
     everything: any
+
+
+###########
+# Add types
+###########
+
+TYPE_NAME_TO_TYPE_DICT["VertexNodeAttributes"] = VertexNodeAttributes
+TYPE_NAME_TO_TYPE_DICT["ArteryNodeTopology"] = ArteryNodeTopology
+TYPE_NAME_TO_TYPE_DICT["ArteryNodeSide"] = ArteryNodeSide
+TYPE_NAME_TO_TYPE_DICT["SimpleCenterlineNodeAttributes"] = SimpleCenterlineNodeAttributes
+TYPE_NAME_TO_TYPE_DICT["HeartCoronaryArteryNodeAttributes"] = HeartCoronaryArteryNodeAttributes
+
+
+
 
 if __name__ == "__main__":
     print("Running 'hcatnetwork.node' module")
-    d = SimpleCenterlineNodeFeatures()
+    d = SimpleCenterlineNodeAttributes()
     print(d)
 
     d["arterial_tree"] = ArteryNodeSide.RIGHT
     print(d, d["arterial_tree"].value)
+

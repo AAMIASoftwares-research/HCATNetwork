@@ -27,8 +27,8 @@ import numpy
 import networkx
 
 from ..core.core import CoreDict
-from ..node.node import SimpleCenterlineNodeFeatures, ArteryNodeTopology, ArteryNodeSide
-from ..edge.edge import SimpleCenterlineEdgeFeatures
+from ..node.node import SimpleCenterlineNodeAttributes, ArteryNodeTopology, ArteryNodeSide
+from ..edge.edge import SimpleCenterlineEdgeAttributes
 from ..utils.slicer import numpy_array_to_open_curve_json, numpy_array_to_fiducials_json
 
 ###################################
@@ -221,8 +221,8 @@ class SimpleCenterlineGraph(CoreDict):
     """The basic centerline graph static dictionary.
 
     There is no way of hard-imposing it in python, but the graph should contain:
-        * nodes of type HCATNetwork.node.SimpleCenterlineNodeFeatures,
-        * edges of type HCATNetwork.edge.SimpleCenterlineEdgeFeatures.
+        * nodes of type HCATNetwork.node.SimpleCenterlineNodeAttributes,
+        * edges of type HCATNetwork.edge.SimpleCenterlineEdgeAttributes.
 
     Both trees (left and right) are stored in the same NetworkX.Graph structure.
     In some patients, it could happen that the left and right subgraphs are not disjointed, hence the need to have just one graph.
@@ -391,7 +391,7 @@ class SimpleCenterlineGraph(CoreDict):
                 subgraph.add_node(segment[1], **graph.nodes[segment[1]])
         # Add the edges
         for segment in segments:
-            edge_features = SimpleCenterlineEdgeFeatures()
+            edge_features = SimpleCenterlineEdgeAttributes()
             edge_features["euclidean_distance"] = networkx.algorithms.shortest_path_length(graph, segment[0], segment[1], weight="euclidean_distance")
             edge_features.update_weight_from_euclidean_distance()
             subgraph.add_edge(segment[0], segment[1], **edge_features)
@@ -445,7 +445,7 @@ class SimpleCenterlineGraph(CoreDict):
                 # Add the edge
                 # Here, the edge's property "euclidean_distance" is the actual distance between the nodes.
                 if not graph_new.has_edge(n0, n1):
-                    edge_features = SimpleCenterlineEdgeFeatures()
+                    edge_features = SimpleCenterlineEdgeAttributes()
                     n0_p = numpy.array([graph.nodes[n0]["x"], graph.nodes[n0]["y"], graph.nodes[n0]["z"]])
                     n1_p = numpy.array([graph.nodes[n1]["x"], graph.nodes[n1]["y"], graph.nodes[n1]["z"]])
                     edge_features["euclidean_distance"] = numpy.linalg.norm(n0_p - n1_p)
@@ -482,7 +482,7 @@ class SimpleCenterlineGraph(CoreDict):
                     while (str(node_id_counter) in graph_new.nodes) or (str(node_id_counter) in untouchable_node_ids):
                         # make sure no new nodes have the same id
                         node_id_counter += 1
-                    node_features = SimpleCenterlineNodeFeatures()
+                    node_features = SimpleCenterlineNodeAttributes()
                     node_features.set_vertex(position_new_)
                     node_features["r"] = radius_new_
                     node_features["t"] = 0.0
@@ -499,7 +499,7 @@ class SimpleCenterlineGraph(CoreDict):
                     n0 = nodes_ids_to_connect_in_sequence_list[i]
                     n1 = nodes_ids_to_connect_in_sequence_list[i + 1]
                     if not graph_new.has_edge(n0, n1):
-                        edge_features = SimpleCenterlineEdgeFeatures()
+                        edge_features = SimpleCenterlineEdgeAttributes()
                         n0_p = numpy.array([graph_new.nodes[n0]["x"], graph_new.nodes[n0]["y"], graph_new.nodes[n0]["z"]])
                         n1_p = numpy.array([graph_new.nodes[n1]["x"], graph_new.nodes[n1]["y"], graph_new.nodes[n1]["z"]])
                         edge_features["euclidean_distance"] = numpy.linalg.norm(n0_p - n1_p)

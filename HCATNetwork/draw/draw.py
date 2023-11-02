@@ -24,7 +24,7 @@ from mpl_toolkits.mplot3d.art3d import Line3DCollection
 
 
 from ..graph import SimpleCenterlineGraph
-from ..node import SimpleCenterlineNodeFeatures, ArteryNodeTopology, ArteryNodeSide
+from ..node import SimpleCenterlineNodeAttributes, ArteryNodeTopology, ArteryNodeSide
 from .styles import *
 
 class SimpleCenterlineGraphInteractiveDrawer():
@@ -60,8 +60,8 @@ class SimpleCenterlineGraphInteractiveDrawer():
     See Also
     --------
     hcatnetwork.graph.SimpleCenterlineGraph
-    hcatnetwork.node.SimpleCenterlineNodeFeatures
-    hcatnetwork.edge.SimpleCenterlineEdgeFeatures
+    hcatnetwork.node.SimpleCenterlineNodeAttributes
+    hcatnetwork.edge.SimpleCenterlineEdgeAttributes
     hcatnetwork.draw.styles
     """
     fig: matplotlib.figure.Figure
@@ -871,8 +871,8 @@ def draw_simple_centerlines_graph_2d(graph: networkx.Graph | SimpleCenterlineGra
     ----------
     graph : networkx.Graph
         The graph to draw. Assumes this kind of dictionaries:
-            nodes: hcatnetwork.node.SimpleCenterlineNodeFeatures
-            edges: hcatnetwork.edge.SimpleCenterlineEdgeFeatures
+            nodes: hcatnetwork.node.SimpleCenterlineNodeAttributes
+            edges: hcatnetwork.edge.SimpleCenterlineEdgeAttributes
             graph: hcatnetwork.graph.SimpleCenterlineGraph
     backend : str, optional = ["hcatnetwork", "networkx", "debug"]
         The backend to use for drawing. 
@@ -1028,8 +1028,8 @@ def draw_simple_centerlines_graph_2d(graph: networkx.Graph | SimpleCenterlineGra
 def draw_centerlines_graph_3d(graph):
     """ NOT READY YET, DO NOT USE
     Assumes this kind on dictionaries:
-        nodes: hcatnetwork.node.SimpleCenterlineNodeFeatures
-        edges: hcatnetwork.edge.SimpleCenterlineEdgeFeatures
+        nodes: hcatnetwork.node.SimpleCenterlineNodeAttributes
+        edges: hcatnetwork.edge.SimpleCenterlineEdgeAttributes
         graph: hcatnetwork.graph.SimpleCenterlineGraph
     """
     ax = plt.subplot(111, projection="3d")
@@ -1040,7 +1040,7 @@ def draw_centerlines_graph_3d(graph):
     s_out = []
     positions = []
     for n in graph.nodes:
-        n_ = SimpleCenterlineNodeFeatures(**(graph.nodes[n]))
+        n_ = SimpleCenterlineNodeAttributes(**(graph.nodes[n]))
         c_in.append(NODE_FACECOLOR_RCA if n_["arterial_tree"].value == ArteryNodeSide.RIGHT.value else NODE_FACECOLOR_LCA)
         if n_["topology_class"].value == ArteryNodeTopology.OSTIUM.value:
             c_out.append(NODE_EDGEECOLOR_START)
@@ -1086,8 +1086,8 @@ def draw_centerlines_graph_3d(graph):
     # plot undirected edges
     segs = []
     for u_,v_,a in graph.edges(data=True):
-        uu = SimpleCenterlineNodeFeatures(**(graph.nodes[u_])).get_vertex_list()
-        vv = SimpleCenterlineNodeFeatures(**(graph.nodes[v_])).get_vertex_list()
+        uu = SimpleCenterlineNodeAttributes(**(graph.nodes[u_])).get_vertex_list()
+        vv = SimpleCenterlineNodeAttributes(**(graph.nodes[v_])).get_vertex_list()
         segs.append(numpy.array([uu[:3],vv[:3]]))
     line_segments = Line3DCollection(segs, zorder=1, linewidth=0.4, color=EDGE_FACECOLOR_DEFAULT)
     ax.add_collection(line_segments)

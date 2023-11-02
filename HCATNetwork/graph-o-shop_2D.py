@@ -18,8 +18,8 @@ import mpl_toolkits
 # imports - gui
 import PyQt6.QtGui
 # imports - my modules
-from .node import SimpleCenterlineNodeFeatures, ArteryNodeTopology, ArteryNodeSide
-from .edge import SimpleCenterlineEdgeFeatures
+from .node import SimpleCenterlineNodeAttributes, ArteryNodeTopology, ArteryNodeSide
+from .edge import SimpleCenterlineEdgeAttributes
 from .draw.styles import (NODE_FACECOLOR_LCA, NODE_FACECOLOR_RCA, NODE_EDGEECOLOR_DEFAULT, 
                           NODE_EDGEECOLOR_END, NODE_EDGEECOLOR_CROSS, NODE_EDGEECOLOR_START, 
                           EDGE_FACECOLOR_DEFAULT)

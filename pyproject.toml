@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name         = "hcatnetwork"
-version      = "2023.10.31-02"
+version      = "2023.11.02-00"
 description      = "A package which defines standardised dictionaries and functionalities to create and work with, visualize and interactively modify Heart coronary Artery Tree Graphs."
 readme = {file = "README.md", content-type = "text/markdown"}
 license = {file = "LICENSE"}
@@ -44,7 +44,7 @@ bug-tracker = "https://github.com/AAMIASoftwares-research/HCATNetwork/issues"
 # Define Package(s)
 [tool.setuptools.packages.find]
 include = ["hcatnetwork*"]
-exclude = ["test*", "test_data*"]
+exclude = ["test*", "test_data*", "DocsThirdParty*", "env*", "venv*", "assets*"]
 
 
 

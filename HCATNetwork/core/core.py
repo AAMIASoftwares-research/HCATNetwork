@@ -95,7 +95,39 @@ def assert_dictionary_validity(dictionary: dict | CoreDict) -> bool:
             return False
     return True
 
-# Utilities - functionalities
+
+
+
+
+
+############################
+# Type checking helper dict
+# ##########################
+
+from numpy import ndarray
+from networkx.classes.graph import Graph
+from networkx.classes.digraph import DiGraph
+from networkx.classes.multigraph import MultiGraph
+from networkx.classes.multidigraph import MultiDiGraph
+
+TYPE_NAME_TO_TYPE_DICT = {
+    "int": int,
+    "float": float,
+    "str": str,
+    "bool": bool,
+    "list": list,
+    "tuple": tuple,
+    "set": set,
+    "dict": dict,
+    "NoneType": type(None),
+    "numpy.ndarray": ndarray,
+    "networkx.classes.graph.Graph": Graph,
+    "networkx.classes.digraph.DiGraph": DiGraph,
+    "networkx.classes.multigraph.MultiGraph": MultiGraph,
+    "networkx.classes.multidigraph.MultiDiGraph": MultiDiGraph
+}
+
+
 
 
 
@@ -115,3 +147,4 @@ if __name__ == "__main__":
         my_ann: bool
     d = summa()
     print(d, d.__annotations__, "\n")
+

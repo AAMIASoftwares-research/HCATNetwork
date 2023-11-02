@@ -46,13 +46,13 @@ if __name__ == "__main__":
     import edge
     G = nx.MultiDiGraph()
     for i, vertex in enumerate(v):
-        node_dict = node.getNodeDictFromKeyList( node.VertexNodeFeatures_KeysList )
-        node.set_VertexNodeFeaturesVertex(node_dict, vertex)
+        node_dict = node.getNodeDictFromKeyList( node.VertexNodeAttributes_KeysList )
+        node.set_VertexNodeAttributesVertex(node_dict, vertex)
         node_dict["class"] = "first" if i == 0 else "last" if i == v.shape[0]-1 else ""
         assert node.assertNodeValidity(node_dict)
         G.add_node(i, **node_dict)
         if i != 0:
-            edge_dict = edge.getEdgeDictFromKeyList(edge.SimpleCenterlineEdgeFeatures_KeysList)
+            edge_dict = edge.getEdgeDictFromKeyList(edge.SimpleCenterlineEdgeAttributes_KeysList)
             d = numpy.linalg.norm(v[i-1] - v[i])
             # forward
             edge_dict["weight"] = d
@@ -60,7 +60,7 @@ if __name__ == "__main__":
             assert edge.assertEdgeValidity(edge_dict)
             G.add_edge(i-1, i, **edge_dict)
             # backward
-            edge_dict = edge.getEdgeDictFromKeyList(edge.SimpleCenterlineEdgeFeatures_KeysList)
+            edge_dict = edge.getEdgeDictFromKeyList(edge.SimpleCenterlineEdgeAttributes_KeysList)
             edge_dict["weight"] = -d
             edge_dict["distance"] = -d
             assert edge.assertEdgeValidity(edge_dict)

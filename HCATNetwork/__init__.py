@@ -6,8 +6,8 @@ It is kinda like a header file with some added functionality, such as graph savi
 
 Access stuff with (example):
     import hcatnetwork
-    node_features = hcatnetwork.node.SimpleCenterlineNodeFeatures()
-    edge_features = hcatnetwork.edge.SimpleCenterlineEdgeFeatures()
+    node_features = hcatnetwork.node.SimpleCenterlineNodeAttributes()
+    edge_features = hcatnetwork.edge.SimpleCenterlineEdgeAttributes()
     graph = hcatnetwork.graph.SimpleCenterlineGraph()
 
 As of now, supported node, edge and graph features include, beside the standard data-types supported by NetworkX and GML file format:
