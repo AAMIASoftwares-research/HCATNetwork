@@ -1,6 +1,8 @@
 # HCATNetwork
 
-Heart Coronary Arterial Tree Network data structure based on NetworkX
+Heart Coronary Arterial Tree Network handling library based on NetworkX.
+
+<img src="./assets/images/graph_art_example.png">
 
 ## Requirements
 
@@ -28,7 +30,7 @@ Now, you should be able to
 
 ```py
 import HCATNetwork
-print(HCATNetwork.edge.SimpleCenterlineEdgeFeatures_KeysList)
+print(HCATNetwork.edge.SimpleCenterlineEdgeAttributes_KeysList)
 ```
 
 just as you would with numpy and other packages.
