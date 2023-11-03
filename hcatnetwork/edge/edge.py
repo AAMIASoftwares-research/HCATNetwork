@@ -62,5 +62,5 @@ if __name__ == "__main__":
 
     d = SimpleCenterlineEdgeAttributes()
     d["weight"] = 0.9
-    print(d.is_valid())
+    print(d.is_full())
     print(d, type(d))

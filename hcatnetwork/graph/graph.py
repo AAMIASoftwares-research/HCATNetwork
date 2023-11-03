@@ -43,26 +43,21 @@ class SimpleCenterlineGraphAttributes(CoreDict):
     are_left_right_disjointed: bool
                     
 class SimpleCenterlineGraph(networkx.classes.graph.Graph):
-    """The basic centerline graph, child of NetworkX.Graph.
 
-    The graph should contain:
-        * nodes of type hcatnetwork.node.SimpleCenterlineNodeAttributes
-        * edges of type hcatnetwork.edge.SimpleCenterlineEdgeAttributes
-    
-    The graph performs automatic type checking upon graph initialization adding of nodes and edges, so that only valid nodes and edges can be added to the graph.
+    def __init__(self, attributes_dict=None, **attributes_kwargs):
+        """The basic centerline graph, child of NetworkX.Graph.
 
-    Both trees (left and right) are stored in the same Graph structure.
-    In some patients, it could happen that the left and right subgraphs are not disjointed, hence the need to have just one graph.
-    
-    SimpleCenterlineGraph, and all its algorithms and methods, assumes that the coronary ostia are disjointed, meaning that the 
-    coronary ostia should not be overlapping or too near to each other. No control is actively performed to check this condition.
+        The graph should contain:
+            * nodes of type hcatnetwork.node.SimpleCenterlineNodeAttributes
+            * edges of type hcatnetwork.edge.SimpleCenterlineEdgeAttributes
+        
+        The graph performs automatic type checking upon graph initialization adding of nodes and edges, so that only valid nodes and edges can be added to the graph.
 
-    See Also
-    --------
-    NetworkX.Graph
-    """
-    def __init__(self, **attr):
-        """Initialize a basic centerline graph with its mandatory attributes, child of NetworkX.Graph.
+        Both trees (left and right) are stored in the same Graph structure.
+        In some patients, it could happen that the left and right subgraphs are not disjointed, hence the need to have just one graph.
+        
+        SimpleCenterlineGraph, and all its algorithms and methods, assumes that the coronary ostia are disjointed, meaning that the 
+        coronary ostia should not be overlapping or too near to each other. No control is actively performed to check this condition.
 
         Parameters
         ----------
@@ -74,16 +69,101 @@ class SimpleCenterlineGraph(networkx.classes.graph.Graph):
             
             are_left_right_disjointed : bool
                 ``True`` if the left and right coronary trees are disjointed, ``False`` otherwise.
+        
+        See Also
+        --------
+        NetworkX.Graph, hcatnetwork.graph.SimpleCenterlineGraph, hcatnetwork.node.SimpleCenterlineNodeAttributes, hcatnetwork.edge.SimpleCenterlineEdgeAttributes
+
+        Examples
+        --------
+        Call the class ike this:
+        > g_dict = SimpleCenterlineGraphAttributes()
+        > g_dict["image_id"] = f"example/name"
+        > g_dict["are_left_right_disjointed"] = True
+        > graph = SimpleCenterlineGraph(g_dict)
+        > # or
+        > graph = SimpleCenterlineGraph(**g_dict)
+
+        passing a ``dict`` or a ``**dict`` is equivalent.
+
+        Or like this
+        > dict_ = {}
+        > dict_["image_id"] = f"example/name"
+        > dict_["are_left_right_disjointed"] = True
+        > graph = SimpleCenterlineGraph(g_dict)
+
+        Or like this
+        > dict_ = {}
+        > dict_["image_id"] = f"example/name"
+        > dict_["are_left_right_disjointed"] = True
+        > dict_ = SimpleCenterlineGraphAttributes(**dict_)
+        > graph = SimpleCenterlineGraph(g_dict)
+
+        # Or like this
+        > graph = SimpleCenterlineGraph(
+        >     image_id="name of image",
+        >    are_left_right_disjointed=True
+        > )
+
+        While this gives an ERROR
+        > g_dict = SimpleCenterlineGraphAttributes()
+        > g_dict["image_id"] = 5                      # error here
+        > g_dict["are_left_right_disjointed"] = "yes" # error here
+        > graph = SimpleCenterlineGraph(g_dict)
+
+        also here
+        >g_dict = {"image_id": 55, "are_left_right_disjointed": True}
+        >graph = SimpleCenterlineGraph(g_dict)
+
+        also here
+        >graph = SimpleCenterlineGraph(image_id="name of image", are_left_right_disjointed="yes")
+
+        # also this
+        > g_dict = SimpleCenterlineGraphAttributes()
+        > g_dict["image_id"] = f"example/name"             # correct
+        > g_dict["are_left_right_disjointed"] = True       # correct
+        > graph = SimpleCenterlineGraph(g_dict)            # correct
+        > graph.graph["invalid key"] = 5                   # error here
+        > graph.graph["are_left_right_disjointed"] = "yes" # error here
 
         """
-        # Make the graph - pass it to networkx.Graph
-        super().__init__(**attr)
-        # Check mandatory attributes of graph - presence and type
+        # ################################
+        # Input handling and type checking
+        # ################################
+        # In this way, a user can pass a dictionary, or key=value pairs, or a **dict
+        if attributes_dict is None and len(attributes_kwargs) == 0:
+            raise ValueError(f"Please provide an input, which can be a fully-populated SimpleCenterlineGraphAttributes dictionary, or a **dict, or key=value pairs corresponding to SimpleCenterlineGraphAttributes. Available attributes are: \n{SimpleCenterlineGraphAttributes.__annotations__}")
+        if attributes_dict is None:
+            # Let SimpleCenterlineGraphAttributes do the type checking (thanks to the CoreDict class)
+            attributes_dict = SimpleCenterlineGraphAttributes(**attributes_kwargs)
+        if isinstance(attributes_dict, dict):
+            # If attributes_dict is a dict, it must be casted to a SimpleCenterlineGraphAttributes
+            if not isinstance(attributes_dict, SimpleCenterlineGraphAttributes):
+                attributes_dict = SimpleCenterlineGraphAttributes(**attributes_dict)
+        if not isinstance(attributes_dict, SimpleCenterlineGraphAttributes):
+            # If attributes_dict is not None, it must be a SimpleCenterlineGraphAttributes
+            raise TypeError(f"attributes_dict must be of type SimpleCenterlineGraphAttributes or dict or None, not {type(attributes_dict)}.")
+        # Now, any provided input is a SimpleCenterlineGraphAttributes
+        # Check for completeness of the attributes
+        if not attributes_dict.is_full():
+            raise ValueError(f"attributes_dict must be a valid SimpleCenterlineGraphAttributes dictionary. provided attributes are {attributes_dict}. Mandatory attributes and types are: \n{SimpleCenterlineGraphAttributes.__annotations__}")
+        
+        # ##############
+        # Make the graph
+        # ##############
+        # Since type checking already occurred, we can safely pass the attributes_dict to the super class
+        super().__init__(**attributes_dict)
+
+        # #####################
+        # On-line type checking
+        # #####################
+        # Check mandatory attributes of graph
+        # by making the self.graph dictionary (originally of type dict) a SimpleCenterlineGraphAttributes dictionary, so that it can inherit the setitem from CoreDict
+        # self.graph is created by super().__init__()
         self._attributes_type = SimpleCenterlineGraphAttributes()
-        self._attributes_types_dict = self._attributes_type.__annotations__
-        self._attributes_types_dict = {k:v if isinstance(v, type) else TYPE_NAME_TO_TYPE_DICT[v] for k,v in self._attributes_types_dict.items()}
-        for k_, t_ in self._attributes_types_dict.items():
-            self._check_attributes_attribute_of_graph(k_, t_)
+        self._attributes_keys_list = [k for k in self._attributes_type.keys()]
+        self._attributes_types_dict = {k:v if isinstance(v, type) else TYPE_NAME_TO_TYPE_DICT[v] for k,v in self._attributes_type.__annotations__.items()}
+        self.graph = SimpleCenterlineGraphAttributes(**self.graph) # incorporated type checking
         # Check mandatory attributes of nodes
         self._simple_centerline_node_attributes_type = SimpleCenterlineNodeAttributes()
         self._simple_centerline_node_attributes_keys_list = [k for k in self._simple_centerline_node_attributes_type.keys()]
@@ -93,14 +173,6 @@ class SimpleCenterlineGraph(networkx.classes.graph.Graph):
         self._simple_centerline_edge_attributes_keys_list = [k for k in self._simple_centerline_edge_attributes_type.keys()]
         self._simple_centerline_edge_attributes_types_dict = self._simple_centerline_edge_attributes_type.__annotations__
         
-
-    def _check_attributes_attribute_of_graph(self, attribute_name: str, attribute_type: type) -> None:
-        """Check if the graph has the mandatory attribute with the correct type."""
-        if self.graph[attribute_name] is None:
-            raise ValueError(f"The graph must have a valid {attribute_name} which cannot be None.")
-        if not isinstance(self.graph[attribute_name], attribute_type):
-            raise TypeError(f"The graph's mandatory attribute {attribute_name} must be of type {attribute_type}, instead it is a {type(self.graph[attribute_name])}.")
-
     def _check_node_id_type(self, node_id) -> None:
         """Check if the node id is of the correct type
         In this case, the correct type is a string.
@@ -510,6 +582,14 @@ TYPE_NAME_TO_TYPE_DICT["HeartDominance"] = HeartDominance
 
 if __name__ == "__main__":
     print("Running 'hcatnetwork.graph' module")
+
+    # Create a graph from scratch
+    if 0:
+        graph = SimpleCenterlineGraph(
+            image_id="name of image",
+            are_left_right_disjointed=True
+        )
+        quit()
     
     # Load a coronary artery tree graph and plot it
     import os

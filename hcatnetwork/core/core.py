@@ -8,14 +8,52 @@ runtime type checking and dict initialisation starting from dictionary keys defi
 To run as a module, activate the venv, go inside the HCATNetwork parent directory,
 and use: python -m hcatnetwork.core.core
 """
+# ##########################
+# Type checking helper dict
+# ##########################
+
+from numpy import ndarray
+from networkx.classes.graph import Graph
+from networkx.classes.digraph import DiGraph
+from networkx.classes.multigraph import MultiGraph
+from networkx.classes.multidigraph import MultiDiGraph
+
+TYPE_NAME_TO_TYPE_DICT = {
+    "int": int,
+    "float": float,
+    "str": str,
+    "bool": bool,
+    "list": list,
+    "tuple": tuple,
+    "set": set,
+    "dict": dict,
+    "NoneType": type(None),
+    "numpy.ndarray": ndarray,
+    "networkx.classes.graph.Graph": Graph,
+    "networkx.classes.digraph.DiGraph": DiGraph,
+    "networkx.classes.multigraph.MultiGraph": MultiGraph,
+    "networkx.classes.multidigraph.MultiDiGraph": MultiDiGraph
+}
+
+
+
+
 from collections import UserDict
+
 
 class CoreDict(UserDict):
     """CoreDict
     This is the base class upon which every feature dictionary must be based on.
+
     This class implements runtime type checking when setting the dictionaries attributes,
     types annotations inheritance from parent classes up to CoreDict class,
     and key searching from dictionary value.
+
+    All child dictionaries must have string objects as keys.
+
+    This is useful for any kind of automatic type checking across the whole developed framework.
+    
+    End users won't need to use this class directly, but only its children.
     """
     def __init__(self, **kws):
         super().__init__()
@@ -24,11 +62,12 @@ class CoreDict(UserDict):
             self.extend_annotations(self)
         # Initialise all allowed keys to None
         for k in self.__annotations__.keys():
+            # Avoid initial type checking
             super().__setitem__(k, None)
         # Initialised any key-value pair passed to the class constructor
         for key, value in kws.items():
             self.__setitem__(key, value)
-    
+         
     @classmethod
     def extend_annotations(cls, obj):
         d = {}
@@ -41,6 +80,21 @@ class CoreDict(UserDict):
                 # has no __annotations__ attribute.
                 pass
         obj.__annotations__ = d
+        # Convert string type names to actual types
+        for k, v in obj.__annotations__.items():
+            # key type must be string
+            if not isinstance(k, str):
+                raise TypeError(f"Invalid key type. {k} must be of type string.")
+            # value type must type
+            if isinstance(v, str):
+                obj.__annotations__[k] = TYPE_NAME_TO_TYPE_DICT[v]
+
+    # Get, set , del
+    # all dict items will be stored with "hcatnetwork_" prefix. User won't notice it at all.
+    def __getitem__(self, key):
+        if not isinstance(key, str):
+            raise TypeError(f"Invalid key type. {key} must be of type string.")
+        return super().__getitem__(key)
 
     def __setitem__(self, key, item) -> None:
         if key in self.__annotations__:
@@ -51,6 +105,11 @@ class CoreDict(UserDict):
         else:
             raise KeyError(f"Invalid key. {key} is not part of the allowed keys: {self.__annotations__} ")
     
+    def __delitem__(self, key) -> None:
+        print("Warning: deleting a key from am hcatnetwork dict is not allowed.")
+        pass
+
+    # utilities
     def key_of(self, value):
         """Returns the first matching key for the given value"""
         for k, v in self.items():
@@ -64,14 +123,16 @@ class CoreDict(UserDict):
             if v == value:
                 yield k
 
-    def is_valid(self) -> bool:
+    def is_full(self) -> bool:
         """
         Asserts validity of the dictionary for graph purposes,
         which means that no dictionary values must be "None" when creating a dictionary
         for an edge, node, graph.
         """
-        for v in self.values():
+        for k, v in self.items():
             if v is None:
+                return False
+            if not isinstance(v, self.__annotations__[k]):
                 return False
         return True
 
@@ -99,33 +160,6 @@ def assert_dictionary_validity(dictionary: dict | CoreDict) -> bool:
 
 
 
-
-############################
-# Type checking helper dict
-# ##########################
-
-from numpy import ndarray
-from networkx.classes.graph import Graph
-from networkx.classes.digraph import DiGraph
-from networkx.classes.multigraph import MultiGraph
-from networkx.classes.multidigraph import MultiDiGraph
-
-TYPE_NAME_TO_TYPE_DICT = {
-    "int": int,
-    "float": float,
-    "str": str,
-    "bool": bool,
-    "list": list,
-    "tuple": tuple,
-    "set": set,
-    "dict": dict,
-    "NoneType": type(None),
-    "numpy.ndarray": ndarray,
-    "networkx.classes.graph.Graph": Graph,
-    "networkx.classes.digraph.DiGraph": DiGraph,
-    "networkx.classes.multigraph.MultiGraph": MultiGraph,
-    "networkx.classes.multidigraph.MultiDiGraph": MultiDiGraph
-}
 
 
 
