@@ -16,7 +16,7 @@ import networkx
 
 from ..node.node import SimpleCenterlineNodeAttributes, ArteryNodeTopology, ArteryNodeSide
 from ..edge.edge import SimpleCenterlineEdgeAttributes
-from ..graph.graph import SimpleCenterlineGraph
+from ..graph.graph import SimpleCenterlineGraphAttributes, SimpleCenterlineGraph
 
 #########
 # SAVING 
@@ -57,6 +57,9 @@ def save_graph(
     """
     # Make a deep copy of the graph, otherwise the graph will be modified even outside this function
     graph = copy.deepcopy(graph)
+    # Make sure graph properties can be freely modified to accomodate the extra saved data
+    if isinstance(graph.graph, SimpleCenterlineGraphAttributes):
+        graph.graph = dict(**graph.graph)
     # Date-time info to save inside file
     dt_dict = {"timezone": "UTC", "datetime": str(datetime.now(timezone.utc))}
     graph.graph["creation_datetime"] = dt_dict
