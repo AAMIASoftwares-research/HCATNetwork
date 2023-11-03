@@ -228,15 +228,15 @@ def load_graph_networkx_output(file_path: str) -> networkx.classes.graph.Graph:
                 for k in graph.nodes[n]:
                     if k in graph.graph["node_features_conversion_dict"]:
                         if graph.graph["node_features_conversion_dict"][k] == "bool":
-                            graph.nodes[n][k] = bool(int(n[k]))
+                            graph.nodes[n][k] = bool(int(graph.nodes[n][k]))
                         elif graph.graph["node_features_conversion_dict"][k] == "int":
-                            graph.nodes[n][k] = int(n[k])
+                            graph.nodes[n][k] = int(graph.nodes[n][k])
                         elif graph.graph["node_features_conversion_dict"][k] == "float":
-                            graph.nodes[n][k] = float(n[k])
+                            graph.nodes[n][k] = float(graph.nodes[n][k])
                         elif graph.graph["node_features_conversion_dict"][k] == "numpy.ndarray":
-                            graph.nodes[n][k] = numpy.array(json.loads(n[k]))
+                            graph.nodes[n][k] = numpy.array(json.loads(graph.nodes[n][k]))
                         elif graph.graph["node_features_conversion_dict"][k] == "list":
-                            graph.nodes[n][k] = json.loads(n[k])
+                            graph.nodes[n][k] = json.loads(graph.nodes[n][k])
                         elif graph.graph["node_features_conversion_dict"][k] == "hcatnetwork.node.ArteryNodeTopology":
                             graph.nodes[n][k] = load_enums(graph.nodes[n], k, ArteryNodeTopology)
                         elif graph.graph["node_features_conversion_dict"][k] == "hcatnetwork.node.ArteryNodeSide":
@@ -265,11 +265,11 @@ def load_graph_networkx_output(file_path: str) -> networkx.classes.graph.Graph:
             for k in graph.graph:
                 if k in graph.graph["graph_features_conversion_dict"]:
                     if graph.graph["graph_features_conversion_dict"][k] == "bool":
-                        graph.graph[n][k] = bool(int(n[k]))
+                        graph.graph[k] = bool(int(graph.graph[k]))
                     elif graph.graph["graph_features_conversion_dict"][k] == "int":
-                        graph.graph[n][k] = int(n[k])
+                        graph.graph[k] = int(graph.graph[k])
                     elif graph.graph["graph_features_conversion_dict"][k] == "float":
-                        graph.graph[n][k] = float(n[k])
+                        graph.graph[k] = float(graph.graph[k])
                     elif graph.graph["graph_features_conversion_dict"][k] == "numpy.ndarray":
                         graph.graph[k] = numpy.array(json.loads(graph.graph[k]))
                     elif graph.graph["graph_features_conversion_dict"][k] == "list":
