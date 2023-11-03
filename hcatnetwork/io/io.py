@@ -17,6 +17,7 @@ import networkx
 from ..node.node import SimpleCenterlineNodeAttributes, ArteryNodeTopology, ArteryNodeSide
 from ..edge.edge import SimpleCenterlineEdgeAttributes
 from ..graph.graph import SimpleCenterlineGraphAttributes, SimpleCenterlineGraph
+from ..graph.graph import HeartDominance
 
 #########
 # SAVING 
