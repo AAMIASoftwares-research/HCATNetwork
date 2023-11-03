@@ -113,15 +113,15 @@ def save_graph(
             if e[k] is None:
                 # The field was not filled although being initialised (which means required)
                 raise ValueError(f"Feature {k} in graph edge {e} is None (was not filled). All features must be filled. Abort saving graph.")
-            if isinstance(n[k], bool):
+            if isinstance(e[k], bool):
                 if not k in edge_features_conversion_k:
                     edge_features_conversion_k.append(k)
                     edge_features_conversion_v.append("bool")
-            if isinstance(n[k], int):
+            if isinstance(e[k], int):
                 if not k in edge_features_conversion_k:
                     edge_features_conversion_k.append(k)
                     edge_features_conversion_v.append("int")
-            if isinstance(n[k], float):
+            if isinstance(e[k], float):
                 if not k in edge_features_conversion_k:
                     edge_features_conversion_k.append(k)
                     edge_features_conversion_v.append("float")
@@ -141,15 +141,15 @@ def save_graph(
         if graph.graph[k] is None:
             # The field was not filled although being initialised (which means required)
             raise ValueError(f"Graph feature {k} is None (was not filled). All features must be filled. Abort saving graph.")
-        if isinstance(n[k], bool):
+        if isinstance(graph.graph[k], bool):
             if not k in graph_features_conversion_k:
                 graph_features_conversion_k.append(k)
                 graph_features_conversion_v.append("bool")
-        if isinstance(n[k], int):
+        if isinstance(graph.graph[k], int):
             if not k in graph_features_conversion_k:
                 graph_features_conversion_k.append(k)
                 graph_features_conversion_v.append("int")
-        if isinstance(n[k], float):
+        if isinstance(graph.graph[k], float):
             if not k in graph_features_conversion_k:
                 graph_features_conversion_k.append(k)
                 graph_features_conversion_v.append("float")
