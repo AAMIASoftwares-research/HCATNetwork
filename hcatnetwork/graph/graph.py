@@ -311,7 +311,7 @@ class SimpleCenterlineGraph(networkx.classes.graph.Graph):
         # Done
         return subgraph
         
-    def resample_coronary_artery_tree(self, mm_between_nodes: float = 0.5) -> SimpleCenterlineGraph:
+    def resample(self, mm_between_nodes: float = 0.5) -> SimpleCenterlineGraph:
         """Resamples the coronary artery tree so that two connected points are on average mm_between_nodes millimeters apart.
 
         The tree is resampled so that the absolute position of coronary ostia, intersections and endpoints is preserved.
