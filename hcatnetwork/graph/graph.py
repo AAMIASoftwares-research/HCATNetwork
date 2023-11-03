@@ -79,22 +79,22 @@ class SimpleCenterlineGraph(networkx.classes.graph.Graph):
         # Make the graph - pass it to networkx.Graph
         super().__init__(**attr)
         # Check mandatory attributes of graph - presence and type
-        self._features_type = SimpleCenterlineGraphAttributes()
-        ks_ = [k for k in self._features_type.keys()]
-        for k_ in ks_:
-            t_ = TYPE_NAME_TO_TYPE_DICT[self._features_type.__annotations__[k_]]
-            self._check_mandatory_attribute_of_graph(k_, t_)
+        self._attributes_type = SimpleCenterlineGraphAttributes()
+        self._attributes_types_dict = self._attributes_type.__annotations__
+        self._attributes_types_dict = {k:v if isinstance(v, type) else TYPE_NAME_TO_TYPE_DICT[v] for k,v in self._attributes_types_dict.items()}
+        for k_, t_ in self._attributes_types_dict.items():
+            self._check_attributes_attribute_of_graph(k_, t_)
         # Check mandatory attributes of nodes
-        self._simple_centerline_node_type = SimpleCenterlineNodeAttributes()
-        self._simple_centerline_node_mandatory_keys_list = [k for k in self._simple_centerline_node_type.keys()]
-        self._simple_centerline_node_mandatory_types_dict = self._simple_centerline_node_type.__annotations__
+        self._simple_centerline_node_attributes_type = SimpleCenterlineNodeAttributes()
+        self._simple_centerline_node_attributes_keys_list = [k for k in self._simple_centerline_node_attributes_type.keys()]
+        self._simple_centerline_node_attributes_types_dict = self._simple_centerline_node_attributes_type.__annotations__
         # Check mandatory attributes of edges
-        self._simple_centerline_edge_type = SimpleCenterlineEdgeAttributes()
-        self._simple_centerline_edge_mandatory_keys_list = [k for k in self._simple_centerline_edge_type.keys()]
-        self._simple_centerline_edge_mandatory_types_dict = self._simple_centerline_edge_type.__annotations__
+        self._simple_centerline_edge_attributes_type = SimpleCenterlineEdgeAttributes()
+        self._simple_centerline_edge_attributes_keys_list = [k for k in self._simple_centerline_edge_attributes_type.keys()]
+        self._simple_centerline_edge_attributes_types_dict = self._simple_centerline_edge_attributes_type.__annotations__
         
 
-    def _check_mandatory_attribute_of_graph(self, attribute_name: str, attribute_type: type) -> None:
+    def _check_attributes_attribute_of_graph(self, attribute_name: str, attribute_type: type) -> None:
         """Check if the graph has the mandatory attribute with the correct type."""
         if self.graph[attribute_name] is None:
             raise ValueError(f"The graph must have a valid {attribute_name} which cannot be None.")
@@ -126,10 +126,10 @@ class SimpleCenterlineGraph(networkx.classes.graph.Graph):
         self._check_node_id_type(node_for_adding)
         # Node attributes type checking
         for k in attr:
-            if not k in self._simple_centerline_node_mandatory_keys_list:
+            if not k in self._simple_centerline_node_attributes_keys_list:
                 raise AttributeError(f"Node attribute {k} is not a valid attribute for a SimpleCenterlineNodeAttributes.")
-            if not isinstance(attr[k], self._simple_centerline_node_mandatory_types_dict[k]):
-                raise TypeError(f"Node attribute {k} -> {attr[k]} must be of type {self._simple_centerline_node_mandatory_types_dict[k]}, instead it is a {type(attr[k])}.")
+            if not isinstance(attr[k], self._simple_centerline_node_attributes_types_dict[k]):
+                raise TypeError(f"Node attribute {k} -> {attr[k]} must be of type {self._simple_centerline_node_attributes_types_dict[k]}, instead it is a {type(attr[k])}.")
         # All checks passed, add the node
         super().add_node(node_for_adding, **attr)
     
@@ -154,10 +154,10 @@ class SimpleCenterlineGraph(networkx.classes.graph.Graph):
         self._check_node_id_type(v_of_edge)
         # Edge attributes type checking
         for k in attr:
-            if not k in self._simple_centerline_edge_mandatory_keys_list:
+            if not k in self._simple_centerline_edge_attributes_keys_list:
                 raise AttributeError(f"Edge attribute {k} is not a valid attribute for a SimpleCenterlineEdgeAttributes.")
-        if not isinstance(attr[k], self._simple_centerline_edge_mandatory_types_dict[k]):
-                raise TypeError(f"Node attribute {k} -> {attr[k]} must be of type {self._simple_centerline_edge_mandatory_types_dict[k]}, instead it is a {type(attr[k])}.")
+        if not isinstance(attr[k], self._simple_centerline_edge_attributes_types_dict[k]):
+                raise TypeError(f"Node attribute {k} -> {attr[k]} must be of type {self._simple_centerline_edge_attributes_types_dict[k]}, instead it is a {type(attr[k])}.")
         # All checks passed, add the edge
         super().add_edge(u_of_edge, v_of_edge, **attr)
 
