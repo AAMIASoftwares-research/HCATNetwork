@@ -514,14 +514,13 @@ if __name__ == "__main__":
     # Load a coronary artery tree graph and plot it
     import os
     from ..io.io import load_graph
-    from ..io.SimpleCenterlineGraph import load_graph as SimpleCenterlineGraph_load_graph
     from ..draw.draw import draw_simple_centerlines_graph_2d
 
     f_prova = "C:\\Users\\lecca\\Desktop\\AAMIASoftwares-research\\Data\\CAT08\\CenterlineGraphs_FromReference\\dataset00.GML"
     try:
-        g_ = SimpleCenterlineGraph_load_graph(f_prova)
+        g_ = load_graph(f_prova, output_type=SimpleCenterlineGraph)
     except TypeError as e:
-        g_ = load_graph(f_prova)
+        g_ = load_graph(f_prova, output_type=networkx.classes.graph.Graph)
         g_.graph["are_left_right_disjointed"] = bool(int(g_.graph["are_left_right_disjointed"]))
         g_ = SimpleCenterlineGraph.from_networkx_graph(g_)
     
