@@ -1,1 +1,1 @@
-from .edge  import *
+from .edge  import SimpleCenterlineEdgeAttributes

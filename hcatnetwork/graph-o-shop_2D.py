@@ -8,6 +8,9 @@ To run as a module, activate the venv, go inside the HCATNetwork parent director
 and use: python -m hcatnetwork.graph-o-shop_2D
 """
 
+###################     WHEN YOU ARE DONE WITH THIS, REMEMBER TO ADD IT TO THE HCATNETWORK IMPORTS IN THE INIT,
+###################     AND ALSO MAYBE MAKE IT AN EXECUTABLE PROGRAM SOMEHOW
+
 # imports - system
 import os, sys, time
 import numpy, networkx
