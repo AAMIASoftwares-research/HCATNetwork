@@ -84,17 +84,58 @@ TYPE_NAME_TO_TYPE_DICT["ArteryNodeSide"] = "ArteryNodeSide"
 TYPE_NAME_TO_TYPE_DICT["SimpleCenterlineNodeAttributes"] = "SimpleCenterlineNodeAttributes"
 
 class ArteryNodeTopology(Enum):
+    """ArteryNodeTopology
+    This is the topology class of a node in the coronary artery tree.
+    
+    Values
+    ------
+    OSTIUM: the starting point of the left or right tree
+    SEGMENT: a point with 2 connections
+    INTERSECTION: a point with more than two connections
+    ENDPOINT: a point with only one connection that is not an ostium
+    """
     OSTIUM = auto()
     SEGMENT = auto()
     INTERSECTION = auto()
     ENDPOINT = auto()
 
 class ArteryNodeSide(Enum):
+    """ArteryNodeSide
+    This is the side of the coronary artery tree to which a node belongs.
+
+    Values
+    ------
+    RIGHT: the right coronary artery
+    LEFT: the left coronary artery
+    RL: both the right and left coronary arteries (arteries can rarely merge together)
+    """
     RIGHT = auto()
     LEFT = auto()
     RL = auto()
 
 class SimpleCenterlineNodeAttributes(VertexNodeAttributes):
+    """SimpleCenterlineNodeAttributes
+
+    This node stores just the most basic information about the geometric centerline,
+    with no added complexity.
+
+    Keys
+    ----
+    x: float
+        The x cartesian coordinate of the node
+    y: float
+        The y cartesian coordinate of the node
+    z: float
+        The z cartesian coordinate of the node
+    r: float
+        The radius of the circle with area equivalent to the area of the coronary lumen at that point
+    t: float
+        The temporal coordinate of the node
+    topology_class: ArteryNodeTopology
+        Whether a node is an ostium, a segment, an intersection or an endpoint
+    tree: ArteryNodeSide
+        Whether a node belongs to the right, left or both coronary artery trees
+    """
     topology_class: ArteryNodeTopology
     t: float
     r: float

@@ -34,6 +34,17 @@ and use: python -m hcatnetwork.edge.edge
 """
 
 class SimpleCenterlineEdgeAttributes(CoreDict):
+    """SimpleCenterlineEdgeAttributes
+    
+    This is the basic edge attributes dictionary.
+    
+    Keys
+    ----
+    weight: float
+        The weight of the edge. It is the signed euclidean distance between the two nodes.
+    euclidean_distance: float
+        The euclidean distance between the two nodes.
+    """
     weight: float
     euclidean_distance: float
 

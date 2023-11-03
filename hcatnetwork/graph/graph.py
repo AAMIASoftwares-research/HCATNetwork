@@ -39,6 +39,19 @@ from ..edge.edge import SimpleCenterlineEdgeAttributes
 #########################
 
 class SimpleCenterlineGraphAttributes(CoreDict):
+    """SimpleCenterlineGraphAttributes
+
+    This is the dictionary type for the SimpleCenterlineGraph attributes.
+
+    Keys
+    ----
+    image_id : str
+        The image id of the image from which the graph was extracted.
+        This string has no fixed format, and can be anything, but it should be clear enough
+        to identify the image, and possibly be consistent for images coming from the same source/dataset.
+    are_left_right_disjointed : bool
+        ``True`` if the left and right coronary trees are disjointed, ``False`` otherwise.
+    """
     image_id: str
     are_left_right_disjointed: bool
                     
