@@ -136,9 +136,9 @@ class SimpleCenterlineNodeAttributes(VertexNodeAttributes):
     tree: ArteryNodeSide
         Whether a node belongs to the right, left or both coronary artery trees
     """
-    topology_class: ArteryNodeTopology
-    t: float
     r: float
+    t: float
+    topology_class: ArteryNodeTopology
     arterial_tree: ArteryNodeSide
 
     def get_vertex_and_radius_list(self):

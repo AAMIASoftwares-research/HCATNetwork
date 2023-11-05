@@ -57,7 +57,7 @@ class SimpleCenterlineGraphAttributes(CoreDict):
                     
 class SimpleCenterlineGraph(networkx.classes.graph.Graph):
 
-    def __init__(self, attributes_dict=None, **attributes_kwargs):
+    def __init__(self, attributes_dict: SimpleCenterlineGraphAttributes | dict | None = None, **attributes_kwargs):
         """The basic centerline graph, child of NetworkX.Graph.
 
         The graph should contain:
@@ -193,7 +193,7 @@ class SimpleCenterlineGraph(networkx.classes.graph.Graph):
         if not isinstance(node_id, str):
             raise ValueError(f"Node id {node_id} must be a string, not a {isinstance(node_id)}.")
 
-    def add_node(self, node_for_adding: str, **attr):
+    def add_node(self, node_for_adding: str, attributes_dict: SimpleCenterlineNodeAttributes | dict | None = None, **attributes_kwargs):
         """Add a single node node_for_adding and update node attributes.
 
         The node's attributes dictionary should be of type hcatnetwork.node.SimpleCenterlineNodeAttributes or a dictionary of
@@ -210,15 +210,26 @@ class SimpleCenterlineGraph(networkx.classes.graph.Graph):
         # Node id type checking
         self._check_node_id_type(node_for_adding)
         # Node attributes type checking
-        for k in attr:
-            if not k in self._simple_centerline_node_attributes_keys_list:
-                raise AttributeError(f"Node attribute {k} is not a valid attribute for a SimpleCenterlineNodeAttributes.")
-            if not isinstance(attr[k], self._simple_centerline_node_attributes_types_dict[k]):
-                raise TypeError(f"Node attribute {k} -> {attr[k]} must be of type {self._simple_centerline_node_attributes_types_dict[k]}, instead it is a {type(attr[k])}.")
+        if attributes_dict is None and len(attributes_kwargs) == 0:
+            raise ValueError(f"Please provide an input, which can be a fully-populated SimpleCenterlineNodeAttributes dictionary, or a dict, **dict or key=value pairs corresponding to SimpleCenterlineNodeAttributes.\nAvailable attributes are:\n{SimpleCenterlineNodeAttributes.__annotations__}")
+        if attributes_dict is None:
+            # Let SimpleCenterlineNodeAttributes do the type checking (thanks to the CoreDict class)
+            attributes_dict = SimpleCenterlineNodeAttributes(**attributes_kwargs)
+        if isinstance(attributes_dict, dict):
+            # If attributes_dict is a dict, it must be casted to a SimpleCenterlineNodeAttributes
+            if not isinstance(attributes_dict, SimpleCenterlineNodeAttributes):
+                attributes_dict = SimpleCenterlineNodeAttributes(**attributes_dict)
+        if not isinstance(attributes_dict, SimpleCenterlineNodeAttributes):
+            # If attributes_dict is not None, it must be a SimpleCenterlineNodeAttributes
+            raise TypeError(f"attributes_dict must be of type SimpleCenterlineNodeAttributes or dict or None, not {type(attributes_dict)}.")
+        # Now, any provided input is a SimpleCenterlineNodeAttributes
+        # Check for completeness of the attributes
+        if not attributes_dict.is_full():
+            raise ValueError(f"attributes_dict must be a valid SimpleCenterlineNodeAttributes dictionary. provided attributes are {attributes_dict}. Mandatory attributes and types are: \n{SimpleCenterlineNodeAttributes.__annotations__}")
         # All checks passed, add the node
-        super().add_node(node_for_adding, **attr)
+        super().add_node(node_for_adding, **attributes_dict)
     
-    def add_edge(self, u_of_edge: str, v_of_edge: str, **attr):
+    def add_edge(self, u_of_edge: str, v_of_edge: str, attributes_dict: SimpleCenterlineEdgeAttributes | dict | None = None, **attributes_kwargs):
         """Add an edge between u_of_edge and v_of_edge.
 
         The edge should be of type hcatnetwork.edge.SimpleCenterlineEdgeAttributes or a dictionary of
@@ -234,17 +245,28 @@ class SimpleCenterlineGraph(networkx.classes.graph.Graph):
             Dictionary of edge attributes. Dictionary must have all attributes of a hcatnetwork.edge.SimpleCenterlineEdgeAttributes.
             Alternatively, it can be a **dict, where dict is of type hcatnetwork.edge.SimpleCenterlineEdgeAttributes.
         """
-        # Edge nodes id type checking
+        # Edge source and target nodes id type checking
         self._check_node_id_type(u_of_edge)
         self._check_node_id_type(v_of_edge)
         # Edge attributes type checking
-        for k in attr:
-            if not k in self._simple_centerline_edge_attributes_keys_list:
-                raise AttributeError(f"Edge attribute {k} is not a valid attribute for a SimpleCenterlineEdgeAttributes.")
-        if not isinstance(attr[k], self._simple_centerline_edge_attributes_types_dict[k]):
-                raise TypeError(f"Node attribute {k} -> {attr[k]} must be of type {self._simple_centerline_edge_attributes_types_dict[k]}, instead it is a {type(attr[k])}.")
+        if attributes_dict is None and len(attributes_kwargs) == 0:
+            raise ValueError(f"Please provide an input, which can be a fully-populated SimpleCenterlineEdgeAttributes dictionary, or a dict, **dict or key=value pairs corresponding to SimpleCenterlineEdgeAttributes.\nAvailable attributes are:\n{SimpleCenterlineEdgeAttributes.__annotations__}")
+        if attributes_dict is None:
+            # Let SimpleCenterlineEdgeAttributes do the type checking (thanks to the CoreDict class)
+            attributes_dict = SimpleCenterlineEdgeAttributes(**attributes_kwargs)
+        if isinstance(attributes_dict, dict):
+            # If attributes_dict is a dict, it must be casted to a SimpleCenterlineEdgeAttributes
+            if not isinstance(attributes_dict, SimpleCenterlineEdgeAttributes):
+                attributes_dict = SimpleCenterlineEdgeAttributes(**attributes_dict)
+        if not isinstance(attributes_dict, SimpleCenterlineEdgeAttributes):
+            # If attributes_dict is not None, it must be a SimpleCenterlineEdgeAttributes
+            raise TypeError(f"attributes_dict must be of type SimpleCenterlineEdgeAttributes or dict or None, not {type(attributes_dict)}.")
+        # Now, any provided input is a SimpleCenterlineEdgeAttributes
+        # Check for completeness of the attributes
+        if not attributes_dict.is_full():
+            raise ValueError(f"attributes_dict must be a valid SimpleCenterlineEdgeAttributes dictionary. provided attributes are {attributes_dict}. Mandatory attributes and types are: \n{SimpleCenterlineEdgeAttributes.__annotations__}")
         # All checks passed, add the edge
-        super().add_edge(u_of_edge, v_of_edge, **attr)
+        super().add_edge(u_of_edge, v_of_edge, **attributes_dict)
 
     def get_relative_coronary_ostia_node_id(self, node_id: str) -> tuple[str] | tuple[str, str]:
         """Get the coronary ostium node id relative to the node with id node_id.
