@@ -524,31 +524,6 @@ class SimpleCenterlineGraph(networkx.classes.graph.Graph):
                         edge_features.update_weight_from_euclidean_distance()
                         graph_new.add_edge(n0, n1, **edge_features)
         return graph_new
-    
-    def save(self, filename: str) -> None:
-        """Save the graph to a file.
-
-        The file format is GML (Graph Modeling Language), which is a text file format for graphs.
-
-        Relies on the function ``save_graph``.
-        
-        Parameters
-        ----------
-        filename : str
-            The name of the file to save the graph to.
-            It must end with ".GML"; this will not be enforced, but not doing it could cause problems in loading it back.
-        
-        Raises
-        ------
-        FileNotFoundError
-            If the file cannot be created.
-
-        See Also
-        --------
-        hcatnetwork.graph.save_graph
-        """
-        # Save the graph
-        save_graph(graph=self, file_path=filename)
 
     @staticmethod
     def from_networkx_graph(graph: networkx.classes.graph.Graph) -> SimpleCenterlineGraph:

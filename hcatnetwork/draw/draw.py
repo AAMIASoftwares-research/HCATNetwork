@@ -976,6 +976,22 @@ def draw_simple_centerlines_graph_2d(graph: networkx.Graph | SimpleCenterlineGra
             s = 1.2*node_size[special_nodes_id_plot],
             zorder=10**6
         )
+        # legend
+        legend_elements = [
+            Line2D([0], [0], marker='o', markerfacecolor=NODE_FACECOLOR_RCA, color="w",                 markersize=10, lw=0),
+            Line2D([0], [0], marker='o', markerfacecolor=NODE_FACECOLOR_LCA, color="w",                 markersize=10, lw=0),
+            Line2D([0], [0], marker='o', markerfacecolor="w",          color=NODE_EDGEECOLOR_START,    markersize=10, lw=0),
+            Line2D([0], [0], marker='o', markerfacecolor="w",          color=NODE_EDGEECOLOR_CROSS, markersize=10, lw=0),
+            Line2D([0], [0], marker='o', markerfacecolor="w",          color=NODE_EDGEECOLOR_END,  markersize=10, lw=0)
+        ]
+        ax.legend(
+            legend_elements,
+            ["RCA",
+            "LCA",
+            "OSTIA",
+            "INTERSECTIONS",
+            "ENDPOINTS"]
+        )
     elif backend == "debug":
         #############
         # NETWORKX
