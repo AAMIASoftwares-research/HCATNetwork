@@ -69,7 +69,7 @@ class VertexNodeAttributes(CoreDict):
 """
 This node stores just the most basic information about the geometric centerline,
 with no added complexity.
-- "topology_class": An enum from the list ["o", "s", "i", "e"]:
+- "topology": An enum from the list ["o", "s", "i", "e"]:
     o: coronary ostium/starting point of the left or right tree
     s: segment (a point with 2 connections)
     i: intersection (a point with more than two connections)
@@ -131,15 +131,15 @@ class SimpleCenterlineNodeAttributes(VertexNodeAttributes):
         The radius of the circle with area equivalent to the area of the coronary lumen at that point
     t: float
         The temporal coordinate of the node
-    topology_class: ArteryNodeTopology
+    topology: ArteryNodeTopology
         Whether a node is an ostium, a segment, an intersection or an endpoint
-    tree: ArteryNodeSide
+    side: ArteryNodeSide
         Whether a node belongs to the right, left or both coronary artery trees
     """
     r: float
     t: float
-    topology_class: ArteryNodeTopology
-    arterial_tree: ArteryNodeSide
+    topology: ArteryNodeTopology
+    side: ArteryNodeSide
 
     def get_vertex_and_radius_list(self):
         return self.get_vertex_list().extend(self.__getitem__("r"))
@@ -190,6 +190,6 @@ if __name__ == "__main__":
     d = SimpleCenterlineNodeAttributes()
     print(d)
 
-    d["arterial_tree"] = ArteryNodeSide.RIGHT
-    print(d, d["arterial_tree"].value)
+    d["side"] = ArteryNodeSide.RIGHT
+    print(d, d["side"].value)
 

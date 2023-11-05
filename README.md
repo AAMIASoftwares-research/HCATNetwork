@@ -74,14 +74,14 @@ node_attributes["y"] = 1.1
 node_attributes["z"] = 2.2
 node_attributes["r"] = 3.3
 node_attributes["t"] = 0.0
-node_attributes["topology_class"] = hcatnetwork.node.ArteryNodeTopology.OSTIUM
+node_attributes["topology"] = hcatnetwork.node.ArteryNodeTopology.OSTIUM
 node_attributes["tree"] = hcatnetwork.node.ArteryNodeTree.LEFT
 graph.add_node("0", node_attributes) # In SimpleCenterlineGraphs, nodes are identified by a str(int) id.
 node_attributes["x"] = 1.0
-node_attributes["topology_class"] = hcatnetwork.node.ArteryNodeTopology.SEGMENT
+node_attributes["topology"] = hcatnetwork.node.ArteryNodeTopology.SEGMENT
 graph.add_node("1", node_attributes)
 node_attributes["x"] = 2.0
-node_attributes["topology_class"] = hcatnetwork.node.ArteryNodeTopology.ENDPOINT
+node_attributes["topology"] = hcatnetwork.node.ArteryNodeTopology.ENDPOINT
 graph.add_node("2", node_attributes)
 # Now, edges of type SimpleCenterlineEdge can be added to the graph
 edge_attributes = hcatnetwork.edge.SimpleCenterlineEdgeAttributes()

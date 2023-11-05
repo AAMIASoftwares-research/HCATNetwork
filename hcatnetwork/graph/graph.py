@@ -286,25 +286,25 @@ class SimpleCenterlineGraph(networkx.classes.graph.Graph):
             raise ValueError(f"Node with id \"{node_id}\" is not in graph.")
         node = self.nodes[node_id]
         # Node is a coronary ostium
-        if node['topology_class'].value == ArteryNodeTopology.OSTIUM.value:
+        if node['topology'].value == ArteryNodeTopology.OSTIUM.value:
             return tuple([node_id])
         # Node is not a coronary ostium
         # The node could be associated with either one or both arterial trees.
         # There should be no nodes asssociated with no artrial trees.
-        if node['arterial_tree'].value != ArteryNodeSide.RL.value:
+        if node['side'].value != ArteryNodeSide.RL.value:
             # The node is associated with a single tree
             for n in self.nodes:
-                if self.nodes[n]['arterial_tree'].value == node['arterial_tree'].value and self.nodes[n]['topology_class'].value == ArteryNodeTopology.OSTIUM.value:
+                if self.nodes[n]['side'].value == node['side'].value and self.nodes[n]['topology'].value == ArteryNodeTopology.OSTIUM.value:
                     return tuple([n])
         else:
             # The node is associated with both arterial trees
             count_hits_ = 0
             left_ostium_n, right_ostium_n = None, None
             for n in self.nodes:
-                if self.nodes[n]['topology_class'].value == ArteryNodeTopology.OSTIUM.value:
-                    if self.nodes[n]['arterial_tree'].value == ArteryNodeSide.LEFT.value:
+                if self.nodes[n]['topology'].value == ArteryNodeTopology.OSTIUM.value:
+                    if self.nodes[n]['side'].value == ArteryNodeSide.LEFT.value:
                         left_ostium_n = n
-                    elif self.nodes[n]['arterial_tree'].value == ArteryNodeSide.RIGHT.value:
+                    elif self.nodes[n]['side'].value == ArteryNodeSide.RIGHT.value:
                         right_ostium_n = n
                     else:
                         raise RuntimeError(f"Node {n} is a coronary ostium associated with no arterial tree (nor left, nor right).")
@@ -326,10 +326,10 @@ class SimpleCenterlineGraph(networkx.classes.graph.Graph):
         count_hits_ = 0
         left_ostium_n, right_ostium_n = None, None
         for n in self.nodes:
-            if self.nodes[n]['topology_class'].value == ArteryNodeTopology.OSTIUM.value:
-                if self.nodes[n]['arterial_tree'].value == ArteryNodeSide.LEFT.value:
+            if self.nodes[n]['topology'].value == ArteryNodeTopology.OSTIUM.value:
+                if self.nodes[n]['side'].value == ArteryNodeSide.LEFT.value:
                     left_ostium_n = n
-                elif self.nodes[n]['arterial_tree'].value == ArteryNodeSide.RIGHT.value:
+                elif self.nodes[n]['side'].value == ArteryNodeSide.RIGHT.value:
                     right_ostium_n = n
                 else:
                     raise RuntimeError(f"Node {n} is a coronary ostium associated with no arterial tree (nor left, nor right).")
@@ -504,8 +504,8 @@ class SimpleCenterlineGraph(networkx.classes.graph.Graph):
                     node_features.set_vertex(position_new_)
                     node_features["r"] = radius_new_
                     node_features["t"] = 0.0
-                    node_features["topology_class"] = ArteryNodeTopology.SEGMENT
-                    node_features["arterial_tree"] = self.nodes[node_before_]["arterial_tree"]
+                    node_features["topology"] = ArteryNodeTopology.SEGMENT
+                    node_features["side"] = self.nodes[node_before_]["side"]
                     graph_new.add_node(str(node_id_counter), **node_features)
                     nodes_ids_to_connect_in_sequence_list.append(str(node_id_counter))
                 # Add the last node

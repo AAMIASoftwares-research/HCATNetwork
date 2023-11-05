@@ -236,9 +236,9 @@ class SimpleCenterlineGraphInteractiveDrawer():
         c_out = []
         lw    = []
         for n in self.graph.nodes:
-            c_in.append(nodes_facecolor_map_dict[self.graph.nodes[n]["arterial_tree"].value])
-            c_out.append(nodes_edgecolor_map_dict[self.graph.nodes[n]["topology_class"].value])
-            lw.append(nodes_edgewidth_map_dict[self.graph.nodes[n]["topology_class"].value])
+            c_in.append(nodes_facecolor_map_dict[self.graph.nodes[n]["side"].value])
+            c_out.append(nodes_edgecolor_map_dict[self.graph.nodes[n]["topology"].value])
+            lw.append(nodes_edgewidth_map_dict[self.graph.nodes[n]["topology"].value])
         # circle sizes (as points/pixels in the patch area) go from 10 pt to 50 pt
         radii_as_dots = self.nodes_r*MILLIMETERS_TO_INCHES*FIGURE_DPI
         circle_sizes = numpy.pi*radii_as_dots**2
@@ -639,19 +639,19 @@ class SimpleCenterlineGraphInteractiveDrawer():
         annotation_text  = f"Node \"{node_id}\"\n"
         annotation_text += f"x: {node['x']: 7.3f} mm\ny: {node['y']: 7.3f} mm\nz: {node['z']: 7.3f} mm\n"
         annotation_text += f"r: {node['r']: 7.3f} mm\nt: {node['t']: 7.3f} s\n"
-        if node['arterial_tree'].value == ArteryNodeSide.RIGHT.value:
+        if node['side'].value == ArteryNodeSide.RIGHT.value:
             annotation_text += f"Right arterial tree\n"
-        elif node['arterial_tree'].value == ArteryNodeSide.LEFT.value:
+        elif node['side'].value == ArteryNodeSide.LEFT.value:
             annotation_text += f"Left arterial tree\n"
-        elif node['arterial_tree'].value == ArteryNodeSide.RL.value:
+        elif node['side'].value == ArteryNodeSide.RL.value:
             annotation_text += f"Both arterial trees\n"
-        if node['topology_class'].value == ArteryNodeTopology.OSTIUM.value:
+        if node['topology'].value == ArteryNodeTopology.OSTIUM.value:
             annotation_text += f"Coronary ostium\n"
-        elif node['topology_class'].value == ArteryNodeTopology.SEGMENT.value:
+        elif node['topology'].value == ArteryNodeTopology.SEGMENT.value:
             annotation_text += f"Arterial segment\n"
-        elif node['topology_class'].value == ArteryNodeTopology.INTERSECTION.value:
+        elif node['topology'].value == ArteryNodeTopology.INTERSECTION.value:
             annotation_text += f"Arterial branching\n"
-        elif node['topology_class'].value == ArteryNodeTopology.ENDPOINT.value:
+        elif node['topology'].value == ArteryNodeTopology.ENDPOINT.value:
             annotation_text += f"Branch endpoint\n"
         # - distance from ostium/ostia
         ostia = self.graph.get_relative_coronary_ostia_node_id(node_id=node_id)
@@ -936,20 +936,20 @@ def draw_simple_centerlines_graph_2d(graph: networkx.Graph | SimpleCenterlineGra
         node_color = ["" for n in graph.nodes]
         for i, n in enumerate(graph.nodes.values()):
             # tree
-            if n["arterial_tree"].value == ArteryNodeSide.LEFT.value:
+            if n["side"].value == ArteryNodeSide.LEFT.value:
                 node_color[i] = NODE_FACECOLOR_LCA
-            elif n["arterial_tree"].value == ArteryNodeSide.RIGHT.value:
+            elif n["side"].value == ArteryNodeSide.RIGHT.value:
                 node_color[i] = NODE_FACECOLOR_RCA
-            elif n["arterial_tree"].value == ArteryNodeSide.RL.value:
+            elif n["side"].value == ArteryNodeSide.RL.value:
                 node_color[i] = NODE_FACECOLOR_LR
             else:
                 node_color[i] = NODE_FACECOLOR_DEFAULT
             # Topography
-            if n["topology_class"].value == ArteryNodeTopology.OSTIUM.value:
+            if n["topology"].value == ArteryNodeTopology.OSTIUM.value:
                 node_color[i] = NODE_EDGEECOLOR_START
-            elif n["topology_class"].value == ArteryNodeTopology.ENDPOINT.value:
+            elif n["topology"].value == ArteryNodeTopology.ENDPOINT.value:
                 node_color[i] = NODE_EDGEECOLOR_END
-            elif n["topology_class"].value == ArteryNodeTopology.INTERSECTION.value:
+            elif n["topology"].value == ArteryNodeTopology.INTERSECTION.value:
                 node_color[i] = NODE_EDGEECOLOR_CROSS
         node_color = numpy.array(node_color)
         node_edge_width = numpy.zeros((graph.number_of_nodes(),))
@@ -1041,14 +1041,14 @@ def draw_centerlines_graph_3d(graph):
     positions = []
     for n in graph.nodes:
         n_ = SimpleCenterlineNodeAttributes(**(graph.nodes[n]))
-        c_in.append(NODE_FACECOLOR_RCA if n_["arterial_tree"].value == ArteryNodeSide.RIGHT.value else NODE_FACECOLOR_LCA)
-        if n_["topology_class"].value == ArteryNodeTopology.OSTIUM.value:
+        c_in.append(NODE_FACECOLOR_RCA if n_["side"].value == ArteryNodeSide.RIGHT.value else NODE_FACECOLOR_LCA)
+        if n_["topology"].value == ArteryNodeTopology.OSTIUM.value:
             c_out.append(NODE_EDGEECOLOR_START)
             s_out.append(2.5)
-        elif n_["topology_class"].value == ArteryNodeTopology.ENDPOINT.value:
+        elif n_["topology"].value == ArteryNodeTopology.ENDPOINT.value:
             c_out.append(NODE_EDGEECOLOR_END)
             s_out.append(2.5)
-        elif n_["topology_class"].value == ArteryNodeTopology.INTERSECTION.value:
+        elif n_["topology"].value == ArteryNodeTopology.INTERSECTION.value:
             c_out.append(NODE_EDGEECOLOR_CROSS)
             s_out.append(2)
         else:

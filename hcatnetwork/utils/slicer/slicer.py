@@ -220,7 +220,7 @@ def convert_graph_to_3dslicer_opencurve(graph: SimpleCenterlineGraph, save_direc
             raise ValueError(f"Affine transformation matrix must be a 4x4 matrix, not {affine_transformation_matrix.shape}.")
     # Cycle through all endpoints
     for n in graph.nodes:
-        if graph.nodes[n]['topology_class'] == ArteryNodeTopology.ENDPOINT:
+        if graph.nodes[n]['topology'] == ArteryNodeTopology.ENDPOINT:
             endpoint_node_id = n
             # get coronary ostium node id that is connected to this endpoint
             ostia_node_id = graph.get_relative_coronary_ostia_node_id(endpoint_node_id)
@@ -240,13 +240,13 @@ def convert_graph_to_3dslicer_opencurve(graph: SimpleCenterlineGraph, save_direc
                 arr_ = arr_[:, :3]
                 # - get other data
                 labels_ = [n for n in path]
-                descriptions_ = [f"{graph.nodes[n]['arterial_tree'].name} {graph.nodes[n]['topology_class'].name}" for n in path]
+                descriptions_ = [f"{graph.nodes[n]['side'].name} {graph.nodes[n]['topology'].name}" for n in path]
                 # - make the json string through this utility function
                 file_content_str = numpy_array_to_open_curve_json(arr_, labels_, descriptions_)
                 # create the file
-                if graph.nodes[ostium_node_id]['arterial_tree'] == ArteryNodeSide.LEFT:
+                if graph.nodes[ostium_node_id]['side'] == ArteryNodeSide.LEFT:
                     tree = "left"
-                if graph.nodes[ostium_node_id]['arterial_tree'] == ArteryNodeSide.RIGHT:
+                if graph.nodes[ostium_node_id]['side'] == ArteryNodeSide.RIGHT:
                     tree = "right"
                 f_name = f"{tree}_arterial_segment_{ostium_node_id}_to_{endpoint_node_id}.SlicerOpenCurve.mkr.json"
                 f_path = os.path.join(save_directory, f_name)
@@ -306,7 +306,7 @@ def convert_graph_to_3dslicer_fiducials(graph: SimpleCenterlineGraph, save_filen
     arr_ = arr_[:, :3]
     # - get other data
     labels_ = [n for n in graph.nodes]
-    descriptions_ = [f"{graph.nodes[n]['arterial_tree'].name} {graph.nodes[n]['topology_class'].name}" for n in graph.nodes]
+    descriptions_ = [f"{graph.nodes[n]['side'].name} {graph.nodes[n]['topology'].name}" for n in graph.nodes]
     file_content_str = numpy_array_to_fiducials_json(arr_, labels_, descriptions_)
     # create and write the file
     f = open(save_filename, "w")
