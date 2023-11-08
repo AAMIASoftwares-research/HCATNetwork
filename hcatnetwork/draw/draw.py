@@ -11,12 +11,14 @@ https://matplotlib.org/stable/users/explain/figure/event_handling.html
 To run as a module, activate the venv, go inside the HCATNetwork parent directory,
 and use: python -m HCATNetwork.draw.draw
 """
+from typing import Any
 import networkx
 import numpy
 
 import matplotlib
 import matplotlib.pyplot as plt
 from matplotlib.animation import FuncAnimation as matplotlib_animation_FuncAnimation
+from matplotlib.backend_bases import NavigationToolbar2
 
 # the two following should have to be discarded
 from matplotlib.lines import Line2D
@@ -79,8 +81,8 @@ class SimpleCenterlineGraphInteractiveDrawer():
         self.nodes_positions = self._get_nodes_positions()
         self.nodes_r = self._get_nodes_radii()
         self.nodes_distance_from_ostia = self._get_nodes_distance_from_ostia()
-        self.nodes_artist_collectionIndex_to_nodeId_map = numpy.array([n for n in self.graph.nodes])
-        self.nodes_artist: matplotlib.collections.CircleCollection = self._get_nodes_artist()
+        self.nodes_artist: matplotlib.collections.CircleCollection
+        self.nodes_artist, self.nodes_position_plotting_order_map, self.nodes_artist_collectionIndex_to_nodeId_map = self._get_nodes_artist()
         self.nodes_artist.set_visible(True)
         self.ax.add_collection(self.nodes_artist)
         #######
@@ -188,6 +190,18 @@ class SimpleCenterlineGraphInteractiveDrawer():
         # Mouse click event on a node and scroll event will trigger a ripple animation emanating from the node
         self.ripples_animation = None
         self.ripples_animation_n_frames = 30
+        # MATPLOTLIB'S NAVIGATION TOOLBAR
+        # we can connect the matplotlib buttons with functionaily:
+        # https://stackoverflow.com/questions/14896580/matplotlib-hooking-in-to-home-back-forward-button-events
+        # developed and tested for matplotlib with pyqt6 as backend:
+        # self.fig.canvas.manager.toolbar.actions()[0].triggered.connect(home_callback)
+        # self.fig.canvas.manager.toolbar.actions()[1].triggered.connect(back_callback)
+        # self.fig.canvas.manager.toolbar.actions()[2].triggered.connect(forward_callback)
+        # toolbar home
+        self.fig.canvas.manager.toolbar.actions()[0].triggered.connect(
+            self._reset_axis_xlim_ylim_views_on_home_button_press_callback
+        )
+        
 
     
     def _get_nodes_positions(self) -> numpy.ndarray:
@@ -281,7 +295,9 @@ class SimpleCenterlineGraphInteractiveDrawer():
             picker=True,
             pickradius=1
         )
-        return nodes_artist
+        node_plot_order = numpy.array(node_plot_order)
+        node_plot_order_to_node_id = numpy.array([n for n in self.graph.nodes])[node_plot_order]
+        return nodes_artist, node_plot_order, node_plot_order_to_node_id
     
     def _get_edges_positions(self) -> numpy.ndarray:
         """Returns a numpy.ndarray of (n_edges, 2, 3) with the n-th edge's coordinates on each row.
@@ -605,7 +621,7 @@ class SimpleCenterlineGraphInteractiveDrawer():
             self.viewplane_carousel_current_index = (self.viewplane_carousel_current_index + 1) % len(self.viewplane_carousel_planes_list)
             current_slice = self.viewplane_carousel_planes_list_slices[self.viewplane_carousel_current_index]
             for node_artist in self.viewplane_carousel_nodes_artists_list:
-                node_artist.set_offsets(self.nodes_positions[:,current_slice])
+                node_artist.set_offsets((self.nodes_positions[:,current_slice])[self.nodes_position_plotting_order_map,:])
             self.__current_projection_edges_positions = self.edges_positions[:,:,current_slice]
             for edge_artist in self.viewplane_carousel_edges_artists_list:
                 edge_artist.set_segments(self.__current_projection_edges_positions)
@@ -888,6 +904,18 @@ class SimpleCenterlineGraphInteractiveDrawer():
                 blit=True
             )
             self.node_ripples_artist.set_visible(False)
+
+    def _reset_axis_xlim_ylim_views_on_home_button_press_callback(self):
+        # reset axis limits considering current view point
+        self.ax.set_xlim(
+            numpy.min(self.nodes_positions[:,self.viewplane_carousel_planes_list_slices[self.viewplane_carousel_current_index][0]])-10,
+            numpy.max(self.nodes_positions[:,self.viewplane_carousel_planes_list_slices[self.viewplane_carousel_current_index][0]])+10
+        )
+        self.ax.set_ylim(
+            numpy.min(self.nodes_positions[:,self.viewplane_carousel_planes_list_slices[self.viewplane_carousel_current_index][1]])-10,
+            numpy.max(self.nodes_positions[:,self.viewplane_carousel_planes_list_slices[self.viewplane_carousel_current_index][1]])+10
+        )
+        self.fig.canvas.draw_idle()
 
  
 def draw_simple_centerlines_graph_2d(graph: networkx.Graph | SimpleCenterlineGraph, backend: str = "hcatnetwork"):
