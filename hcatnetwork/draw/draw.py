@@ -216,40 +216,66 @@ class SimpleCenterlineGraphInteractiveDrawer():
         By default, nodes are viewed projected to the XY plane.
         """
         nodes_facecolor_map_dict = {
-            ArteryNodeSide.RIGHT.value: NODE_FACECOLOR_RCA,
-            ArteryNodeSide.LEFT.value: NODE_FACECOLOR_LCA,
-            ArteryNodeSide.RL.value: NODE_FACECOLOR_LR
+            ArteryNodeSide.RIGHT: NODE_FACECOLOR_RCA,
+            ArteryNodeSide.LEFT: NODE_FACECOLOR_LCA,
+            ArteryNodeSide.RL: NODE_FACECOLOR_LR
         }
         nodes_edgecolor_map_dict = {
-            ArteryNodeTopology.OSTIUM.value: NODE_EDGEECOLOR_START,
-            ArteryNodeTopology.SEGMENT.value: NODE_EDGEECOLOR_DEFAULT,
-            ArteryNodeTopology.ENDPOINT.value: NODE_EDGEECOLOR_END,
-            ArteryNodeTopology.INTERSECTION.value: NODE_EDGEECOLOR_CROSS
+            ArteryNodeTopology.OSTIUM: NODE_EDGEECOLOR_START,
+            ArteryNodeTopology.SEGMENT: NODE_EDGEECOLOR_DEFAULT,
+            ArteryNodeTopology.ENDPOINT: NODE_EDGEECOLOR_END,
+            ArteryNodeTopology.INTERSECTION: NODE_EDGEECOLOR_CROSS
         }
         nodes_edgewidth_map_dict = {
-            ArteryNodeTopology.OSTIUM.value: 2.2,
-            ArteryNodeTopology.SEGMENT.value: 0.0,
-            ArteryNodeTopology.ENDPOINT.value: 1,
-            ArteryNodeTopology.INTERSECTION.value: 1.8
+            ArteryNodeTopology.OSTIUM: 2.0,
+            ArteryNodeTopology.SEGMENT: 0.0,
+            ArteryNodeTopology.ENDPOINT: 1.5,
+            ArteryNodeTopology.INTERSECTION: 1.5
         }
         c_in  = []
         c_out = []
         lw    = []
+        # artists get drawn from the first to the last, so the order is important
+        # we want the RCA to be drawn before the LCA, so that the LCA is on top
+        # where it usually cross from the top XY plane view.
+        # Moreover, we want the ostium, intersection and endpoints to stand out
+        # with respect to the other nodes, so we plot them on top of all the others.
+        node_plot_order = []
+        for i, n in enumerate(self.graph.nodes):
+            # The first are the nodes in common between left and right
+            if self.graph.nodes[n]["side"] == ArteryNodeSide.RL:
+                if self.graph.nodes[n]["topology"] == ArteryNodeTopology.SEGMENT:
+                    node_plot_order.append(i)
+        for i, n in enumerate(self.graph.nodes):
+            # The second is the RCA
+            if self.graph.nodes[n]["side"] == ArteryNodeSide.RIGHT:
+                if self.graph.nodes[n]["topology"] == ArteryNodeTopology.SEGMENT:
+                    node_plot_order.append(i)
+        for i, n in enumerate(self.graph.nodes):
+            # The third is the LCA
+            if self.graph.nodes[n]["side"] == ArteryNodeSide.LEFT:
+                if self.graph.nodes[n]["topology"] == ArteryNodeTopology.SEGMENT:
+                    node_plot_order.append(i)
+        for i, n in enumerate(self.graph.nodes):
+            # lastly, all the important landmarks
+            if not self.graph.nodes[n]["topology"] == ArteryNodeTopology.SEGMENT:
+                node_plot_order.append(i)
+        # get the nodes
         for n in self.graph.nodes:
-            c_in.append(nodes_facecolor_map_dict[self.graph.nodes[n]["side"].value])
-            c_out.append(nodes_edgecolor_map_dict[self.graph.nodes[n]["topology"].value])
-            lw.append(nodes_edgewidth_map_dict[self.graph.nodes[n]["topology"].value])
+            c_in.append(nodes_facecolor_map_dict[self.graph.nodes[n]["side"]])
+            c_out.append(nodes_edgecolor_map_dict[self.graph.nodes[n]["topology"]])
+            lw.append(nodes_edgewidth_map_dict[self.graph.nodes[n]["topology"]])
         # circle sizes (as points/pixels in the patch area) go from 10 pt to 50 pt
         radii_as_dots = self.nodes_r*MILLIMETERS_TO_INCHES*FIGURE_DPI
-        circle_sizes = numpy.pi*radii_as_dots**2
+        circle_sizes = (2*radii_as_dots)**2 # in matplotlib, the circle size is the area of the square which inscribes the circle
         circle_sizes = 10 + 40*(circle_sizes - numpy.min(circle_sizes))/(numpy.max(circle_sizes) - numpy.min(circle_sizes))
         nodes_artist = matplotlib.collections.CircleCollection(
-            sizes=circle_sizes,
-            offsets=self.nodes_positions[:,[0,1]],
+            sizes=circle_sizes[node_plot_order],
+            offsets=self.nodes_positions[:,[0,1]][node_plot_order, :],
             offset_transform=self.ax.transData,
-            edgecolors=c_out,
-            facecolors=c_in,
-            linewidths=lw,
+            edgecolors=numpy.array(c_out)[node_plot_order],
+            facecolors=numpy.array(c_in)[node_plot_order],
+            linewidths=numpy.array(lw)[node_plot_order],
             antialiaseds=True,
             zorder=2.0,
             picker=True,
@@ -1135,9 +1161,9 @@ def draw_centerlines_graph_3d(graph):
 
 
 if __name__ == "__main__":
-    f_prova = "C:\\Users\\lecca\\Desktop\\AAMIASoftwares-research\\Data\\CAT08\\CenterlineGraphs_FromReference\\dataset00.GML"
-    from ..graph import load_graph
-    g_ = load_graph(f_prova)
+    f_prova = "C:\\Users\\lecca\\Desktop\\AAMIASoftwares-research\\Data\\CAT08\\centerlines_graphs\\dataset00.GML"
+    from ..io import load_graph
+    g_ = load_graph(f_prova, output_type=SimpleCenterlineGraph)
     draw_simple_centerlines_graph_2d(graph=g_)
     draw_simple_centerlines_graph_2d(graph=g_, backend="networkx")
     draw_simple_centerlines_graph_2d(graph=g_, backend="debug")
