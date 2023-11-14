@@ -191,6 +191,7 @@ class SimpleCenterlineGraphInteractiveDrawer():
         self.ripples_animation = None
         self.ripples_animation_n_frames = 30
         # MATPLOTLIB'S NAVIGATION TOOLBAR
+        # ------------ DOES NOT WORK IN COLAB -----------------    
         # we can connect the matplotlib buttons with functionaily:
         # https://stackoverflow.com/questions/14896580/matplotlib-hooking-in-to-home-back-forward-button-events
         # developed and tested for matplotlib with pyqt6 as backend:
@@ -198,9 +199,9 @@ class SimpleCenterlineGraphInteractiveDrawer():
         # self.fig.canvas.manager.toolbar.actions()[1].triggered.connect(back_callback)
         # self.fig.canvas.manager.toolbar.actions()[2].triggered.connect(forward_callback)
         # toolbar home
-        self.fig.canvas.manager.toolbar.actions()[0].triggered.connect(
-            self._reset_axis_xlim_ylim_views_on_home_button_press_callback
-        )
+        #self.fig.canvas.manager.toolbar.actions()[0].triggered.connect(
+        #    self._reset_axis_xlim_ylim_views_on_home_button_press_callback
+        #)
         
 
     
