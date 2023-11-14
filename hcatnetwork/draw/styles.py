@@ -6,14 +6,17 @@ matplotlib
 palettable (https://jiffyclub.github.io/palettable/)
 """
 import matplotlib
-import PyQt6.QtGui
+#import PyQt6.QtGui
 
 def get_primary_screen_dpi():
     """Get the DPI of the primary screen"""
+    """
     app = PyQt6.QtGui.QGuiApplication([])
     screen = app.primaryScreen()
     dpi = screen.physicalDotsPerInch()
     return dpi
+    """
+    return 96
 
 MILLIMETERS_TO_INCHES = 0.0393701
 INCHES_TO_MILLIMETERS = 1.0 / MILLIMETERS_TO_INCHES
