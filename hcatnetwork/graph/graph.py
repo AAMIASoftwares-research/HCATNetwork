@@ -22,6 +22,7 @@ from __future__ import annotations
 
 from enum import Enum, auto
 import numpy
+import matplotlib, mpl_toolkits
 import networkx
 
 from ..core.core import CoreDict, TYPE_NAME_TO_TYPE_DICT
@@ -524,6 +525,73 @@ class SimpleCenterlineGraph(networkx.classes.graph.Graph):
                         edge_features.update_weight_from_euclidean_distance()
                         graph_new.add_edge(n0, n1, **edge_features)
         return graph_new
+    
+    def get_edge_artist_2d(self, reference_system: tuple[str, str] = ('x','y'), **kwargs) -> matplotlib.collections.LineCollection:
+        """Gets the edge artist for 2D plotting.
+        Add it to the axes with ax_2d.add_collection(artist).
+
+        Parameters
+        ----------
+        reference_system : tuple, optional
+            The reference system to use for plotting, by default ('x','y').
+            Available: ['x', 'y', 'z']. The first element is the x-axis, the second element is the y-axis.
+        **kwargs
+            Arbitrary keyword arguments to be passed to the matplotlib.collections.LineCollection constructor.
+
+        Returns
+        -------
+        matplotlib.collections.LineCollection
+            The edge artist for 2D plotting.
+        """
+        # Clean input
+        if len(reference_system) != 2:
+            raise ValueError(f"reference_system must be a 2-tuple, not {reference_system}.")
+        if not all([isinstance(i, str) for i in reference_system]):
+            raise ValueError(f"reference_system must contain char/string, not {reference_system}.")
+        if not all([i in ['x','y','z'] for i in reference_system]):
+            raise ValueError(f"reference_system must contain char/string in ['x','y','z']), not {reference_system}.")
+        if reference_system[0] == reference_system[1]:
+            raise ValueError(f"reference_system must contain two different elements, not {reference_system}.")
+        # Get the edge coordinates
+        edge_coordinates = []
+        for n0, n1 in self.edges:
+            edge_coordinates.append(
+                [
+                    [self.nodes[n0][reference_system[0]], self.nodes[n0][reference_system[1]]],
+                    [self.nodes[n1][reference_system[0]], self.nodes[n1][reference_system[1]]]
+                ]
+            )
+        # Create the artist
+        artist = matplotlib.collections.LineCollection(edge_coordinates, **kwargs)
+        return artist
+    
+    def get_edge_artist_3d(self, **kwargs) -> mpl_toolkits.mplot3d.art3d.Line3DCollection:
+        """Gets the edge artist for 3D plotting.
+        Add it to the axes with ax_3d.add_collection(artist).
+
+        Parameters
+        ----------
+        **kwargs
+            Arbitrary keyword arguments to be passed to the mpl_toolkits.mplot3d.art3d.Line3DCollection constructor.
+
+        Returns
+        -------
+        mpl_toolkits.mplot3d.art3d.Line3DCollection
+            The edge artist for 3D plotting.
+        """
+        # Get the edge coordinates
+        edge_coordinates = []
+        for n0, n1 in self.edges:
+            edge_coordinates.append(
+                [
+                    [self.nodes[n0]["x"], self.nodes[n0]["y"], self.nodes[n0]["z"]],
+                    [self.nodes[n1]["x"], self.nodes[n1]["y"], self.nodes[n1]["z"]]
+                ]
+            )
+        # Create the artist
+        artist = mpl_toolkits.mplot3d.art3d.Line3DCollection(edge_coordinates, **kwargs)
+        return artist
+
 
     @staticmethod
     def from_networkx_graph(graph: networkx.classes.graph.Graph) -> SimpleCenterlineGraph:
@@ -606,7 +674,7 @@ if __name__ == "__main__":
     from ..io.io import load_graph
     from ..draw.draw import draw_simple_centerlines_graph_2d
 
-    f_prova = "C:\\Users\\lecca\\Desktop\\AAMIASoftwares-research\\Data\\CAT08\\CenterlineGraphs_FromReference\\dataset00.GML"
+    f_prova = "C:\\Users\\lecca\\Desktop\\AAMIASoftwares-research\\Data\\CAT08\\centerlines_graphs\\dataset00.GML"
     try:
         g_ = load_graph(f_prova, output_type=SimpleCenterlineGraph)
     except TypeError as e:
@@ -631,7 +699,7 @@ if __name__ == "__main__":
         draw_simple_centerlines_graph_2d(subgraph)
 
     # Resample the graph
-    if 1:
+    if 0:
         import time
         _t_s = time.time()
         reampled_graph = g_.resample_coronary_artery_tree(
@@ -691,6 +759,25 @@ if __name__ == "__main__":
                 save_filename=fname_fiducials,
                 affine_transformation_matrix=affine_asoca
             )
+
+    # Get 2d and artists
+    if 0:
+        import matplotlib.pyplot as plt
+        fig = plt.figure()
+        # 2d
+        ax = fig.add_subplot(121)
+        artist = g_.get_edge_artist_2d()
+        ax.add_collection(artist)
+        ax.autoscale()
+        ax.margins(0.1)
+        # 3d
+        ax = fig.add_subplot(122, projection='3d')
+        artist = g_.get_edge_artist_3d()
+        ax.add_collection(artist)
+        ax.autoscale()
+        ax.margins(0.1)
+        plt.show()
+
     
 
     
