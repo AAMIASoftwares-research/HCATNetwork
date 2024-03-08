@@ -194,7 +194,7 @@ class SimpleCenterlineGraph(networkx.classes.graph.Graph):
         In this case, the correct type is a string.
         """
         if not isinstance(node_id, str):
-            raise ValueError(f"Node id {node_id} must be a string, not a {isinstance(node_id)}.")
+            raise ValueError(f"Node id {node_id} must be a string, not a {type(node_id)}.")
 
     def add_node(self, node_for_adding: str, attributes_dict: SimpleCenterlineNodeAttributes | dict | None = None, **attributes_kwargs):
         """Add a single node node_for_adding and update node attributes.
