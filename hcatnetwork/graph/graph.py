@@ -421,7 +421,7 @@ class SimpleCenterlineGraph(networkx.classes.graph.Graph):
         # Done
         return subgraph
         
-    def resample(self, mm_between_nodes: float = 0.5) -> SimpleCenterlineGraph:
+    def resample(self, mm_between_nodes: float = 0.5, update_image_id=True) -> SimpleCenterlineGraph:
         """Resamples the coronary artery tree so that two connected points are on average mm_between_nodes millimeters apart.
 
         The tree is resampled so that the absolute position of coronary ostia, intersections and endpoints is preserved.
@@ -431,6 +431,8 @@ class SimpleCenterlineGraph(networkx.classes.graph.Graph):
         ----------
         mm_between_nodes : float, optional
             The average distance between two connected points, in millimeters, by default 0.5.
+        update_image_id : bool, optional
+            If True, the image_id (name of the grap) is updated to reflect the resampling, by default True.
 
         Returns
         -------
@@ -440,7 +442,8 @@ class SimpleCenterlineGraph(networkx.classes.graph.Graph):
         """
         # Create the new graph, copying the info from the original graph
         graph_new = SimpleCenterlineGraph(**self.graph)
-        graph_new.graph["image_id"] += f" - resampled {mm_between_nodes:3.3f} mm"
+        if update_image_id:
+            graph_new.graph["image_id"] += f" - resampled {mm_between_nodes:3.3f} mm"
         # Get the anatomic segments of the original graph
         segments = self.get_anatomic_segments()
         # - consider each segment only once, needed for patients with non-disjointed left and right trees
