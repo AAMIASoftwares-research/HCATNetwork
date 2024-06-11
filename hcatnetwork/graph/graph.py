@@ -573,7 +573,7 @@ class SimpleCenterlineGraph(networkx.classes.graph.Graph):
             raise RuntimeError(f"Node \"{node_id}\" has neighbours neither closest or furthest from the related ostium.")
         return direction
     
-    def convert_all_nodes_positions_with_affine(self, affine: numpy.ndarray) -> None:
+    def transform_nodes_position(self, affine: numpy.ndarray) -> None:
         """Converts all nodes positions with the affine transformation matrix.
 
         Parameters
