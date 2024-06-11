@@ -573,6 +573,33 @@ class SimpleCenterlineGraph(networkx.classes.graph.Graph):
             raise RuntimeError(f"Node \"{node_id}\" has neighbours neither closest or furthest from the related ostium.")
         return direction
     
+    def convert_all_nodes_positions_with_affine(self, affine: numpy.ndarray) -> None:
+        """Converts all nodes positions with the affine transformation matrix.
+
+        Parameters
+        ----------
+        affine : numpy.ndarray
+            The affine transformation matrix (4 x 4).
+        
+        """
+        # Check the affine matrix
+        if not isinstance(affine, numpy.ndarray):
+            raise ValueError(f"affine must be a numpy.ndarray, not {type(affine)}.")
+        if not affine.shape == (4, 4):
+            raise ValueError(f"affine must be a 4x4 matrix, not {affine.shape}.")
+        # make array of all positions so that we do computation in a single batch
+        positions = numpy.array([
+            [node["x"], node["y"], node["z"]]
+            for node in self.nodes.values()
+        ])
+        # apply the affine transformation
+        positions_new = numpy.dot(affine, numpy.append(positions, numpy.ones((positions.shape[0], 1)), axis=1).T).T
+        # update the nodes
+        for i, node_id in enumerate(self.nodes):
+            self.nodes[node_id]["x"] = positions_new[i, 0]
+            self.nodes[node_id]["y"] = positions_new[i, 1]
+            self.nodes[node_id]["z"] = positions_new[i, 2]
+    
     def get_edge_artist_2d(self, reference_system: tuple[str, str] = ('x','y'), **kwargs) -> matplotlib.collections.LineCollection:
         """Gets the edge artist for 2D plotting.
         Add it to the axes with ax_2d.add_collection(artist).
