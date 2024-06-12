@@ -271,7 +271,7 @@ class SimpleCenterlineGraph(networkx.classes.graph.Graph):
         # All checks passed, add the edge
         super().add_edge(u_of_edge, v_of_edge, **attributes_dict)
 
-    def get_relative_coronary_ostia_node_id(self, node_id: str) -> tuple[str] | tuple[str, str]:
+    def _get_relative_coronary_ostia_node_id(self, node_id: str) -> tuple[str] | tuple[str, str]:
         """Get the coronary ostium node id relative to the node with id node_id.
 
         Parameters
@@ -297,7 +297,7 @@ class SimpleCenterlineGraph(networkx.classes.graph.Graph):
         if node['side'].value != ArteryNodeSide.RL.value:
             # The node is associated with a single tree
             for n in self.nodes:
-                if self.nodes[n]['side'].value == node['side'].value and self.nodes[n]['topology'].value == ArteryNodeTopology.OSTIUM.value:
+                if  self.nodes[n]['topology'].value == ArteryNodeTopology.OSTIUM.value and self.nodes[n]['side'].value == node['side'].value:
                     return tuple([n])
         else:
             # The node is associated with both arterial trees
@@ -317,8 +317,10 @@ class SimpleCenterlineGraph(networkx.classes.graph.Graph):
         # If the code reaches this point, it means that the node is not associated with any arterial tree
         raise RuntimeError(f"Node {n} is a coronary ostium associated with no arterial tree (nor left, nor right).")
 
-    def get_coronary_ostia_node_id(self) -> tuple[str, str]:
+    def get_coronary_ostia_node_id(self, node_id:str|None = None) -> tuple[str, str]:
         """Gets the left and right coronary ostia node ids.
+
+        If node_id is provided, the function will return the ostia node id relative to the node with id node_id in a tuple.
 
         Returns
         -------
@@ -326,21 +328,26 @@ class SimpleCenterlineGraph(networkx.classes.graph.Graph):
             2-tuple of strings, where the first element is the left ostium node id, and the second element is the right ostium node id.
             If an ostium cannot be found, the element will be set to None. This should never happen.
         """
-        count_hits_ = 0
-        left_ostium_n, right_ostium_n = None, None
-        for n in self.nodes:
-            if self.nodes[n]['topology'].value == ArteryNodeTopology.OSTIUM.value:
-                if self.nodes[n]['side'].value == ArteryNodeSide.LEFT.value:
-                    left_ostium_n = n
-                elif self.nodes[n]['side'].value == ArteryNodeSide.RIGHT.value:
-                    right_ostium_n = n
-                else:
-                    raise RuntimeError(f"Node {n} is a coronary ostium associated with no arterial tree (nor left, nor right).")
-                count_hits_ += 1
-                if count_hits_ == 2:
-                    return tuple([left_ostium_n, right_ostium_n])
-        # If the code reaches this point, it means that the graph does not have two ostia, so return the tuple with a None element
-        return tuple([left_ostium_n, right_ostium_n])
+        if node_id is None:
+            count_hits_ = 0
+            left_ostium_n, right_ostium_n = None, None
+            for n in self.nodes:
+                if self.nodes[n]['topology'].value == ArteryNodeTopology.OSTIUM.value:
+                    if self.nodes[n]['side'].value == ArteryNodeSide.LEFT.value:
+                        left_ostium_n = n
+                    elif self.nodes[n]['side'].value == ArteryNodeSide.RIGHT.value:
+                        right_ostium_n = n
+                    else:
+                        raise RuntimeError(f"Node {n} is a coronary ostium associated with no arterial tree (nor left, nor right).")
+                    count_hits_ += 1
+                    if count_hits_ == 2:
+                        return tuple([left_ostium_n, right_ostium_n])
+            # If the code reaches this point, it means that the graph does not have two ostia, so return the tuple with a None element
+            return tuple([left_ostium_n, right_ostium_n])
+        else:
+            return self._get_relative_coronary_ostia_node_id(node_id)
+            
+
     
     def get_anatomic_segments(self) -> list[tuple[str]]:
         """Gets the segments of the graph, starting from the coronary ostia.
@@ -886,6 +893,23 @@ TYPE_NAME_TO_TYPE_DICT["HeartDominance"] = HeartDominance
 
 
 
+
+
+# TEST: get_flow_direction and get_nodes_distance_from_ostia
+
+if __name__ == "__main__":
+    import time
+    import matplotlib.pyplot as plt
+    from ..io.io import load_graph
+    graph_path = "E:/MatteoLeccardi/HearticData/CAT08/centerlines_graphs/dataset00.GML"
+    graph = load_graph(graph_path, output_type=networkx.classes.graph.Graph)
+    graph.graph["are_left_right_disjointed"] = bool(int(graph.graph["are_left_right_disjointed"]))
+    graph = SimpleCenterlineGraph.from_networkx_graph(graph)
+    # Test get_nodes_distance_from_ostia
+    from ..draw.draw import draw_simple_centerlines_graph_2d
+    draw_simple_centerlines_graph_2d(graph)
+    #
+    quit()
 
 
 

@@ -80,7 +80,7 @@ class SimpleCenterlineGraphInteractiveDrawer():
         #######
         self.nodes_positions = self._get_nodes_positions()
         self.nodes_r = self._get_nodes_radii()
-        self.nodes_distance_from_ostia = self._get_nodes_distance_from_ostia()
+        self.nodes_distance_from_ostia = self.graph.get_nodes_distance_from_ostia()
         self.nodes_artist: matplotlib.collections.CircleCollection
         self.nodes_artist, self.nodes_position_plotting_order_map, self.nodes_artist_collectionIndex_to_nodeId_map = self._get_nodes_artist()
         self.nodes_artist.set_visible(True)
@@ -323,28 +323,6 @@ class SimpleCenterlineGraphInteractiveDrawer():
         )
         return line_collection
     
-    def _get_nodes_distance_from_ostia(self) -> dict[str: float]:
-        """Returns a dictionary with nodes id as keys, the distance of the node from the ostium as value.
-        If two ostia are present, the distance is the minimum of the two.
-        """
-        node_dist_map = {}
-        ostia = self.graph.get_coronary_ostia_node_id()
-        for ostium in ostia:
-            node_dist_map.update({ostium: 0.0})
-            d_ = networkx.single_source_dijkstra_path_length(self.graph, source=ostium, weight="euclidean_distance")
-            try:
-                d_.pop(ostium)
-            except KeyError:
-                pass
-            # If two ostia, get the one with lowest distance
-            for k in d_.keys():
-                if k in node_dist_map.keys():
-                    if d_[k] < node_dist_map[k]:
-                        node_dist_map[k] = d_[k]
-                else:
-                    node_dist_map.update({k: d_[k]})
-        return node_dist_map
-    
     def getEdgesDistanceArray(self) -> numpy.ndarray:
         """Returns a numpy array with the distance of each edge's first node from respective ostium.
         If two ostia are present for the first node, the distance is the minimum of the two.
@@ -353,10 +331,9 @@ class SimpleCenterlineGraphInteractiveDrawer():
         -------
         numpy.ndarray
         """
-        temp_node_dist_map_ = self._get_nodes_distance_from_ostia()
         edge_distance_color_map = []
         for (u_,v_) in self.graph.edges(data=False):
-            edge_distance_color_map.append(temp_node_dist_map_[u_])
+            edge_distance_color_map.append(self.nodes_distance_from_ostia[u_])
         edge_distance_color_map = numpy.array(edge_distance_color_map)
         return edge_distance_color_map
     
@@ -696,9 +673,9 @@ class SimpleCenterlineGraphInteractiveDrawer():
         elif node['topology'].value == ArteryNodeTopology.ENDPOINT.value:
             annotation_text += f"Branch endpoint\n"
         # - distance from ostium/ostia
-        ostia = self.graph.get_relative_coronary_ostia_node_id(node_id=node_id)
+        ostia = self.graph.get_coronary_ostia_node_id(node_id=node_id)
         if len(ostia) == 1:
-            distance = networkx.shortest_path_length(self.graph, source=ostia[0], target=node_id, weight="euclidean_distance")
+            distance = self.nodes_distance_from_ostia[node_id]
             annotation_text += f"Distance from ostium:\n{distance: 8.3f} mm"
         elif len(ostia) == 2:
             # ostia[0] is alwais left, ostia[1] is alwais right
