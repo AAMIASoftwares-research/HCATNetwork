@@ -223,7 +223,7 @@ def convert_graph_to_3dslicer_opencurve(graph: SimpleCenterlineGraph, save_direc
         if graph.nodes[n]['topology'] == ArteryNodeTopology.ENDPOINT:
             endpoint_node_id = n
             # get coronary ostium node id that is connected to this endpoint
-            ostia_node_id = graph.get_relative_coronary_ostia_node_id(endpoint_node_id)
+            ostia_node_id = graph.get_coronary_ostia_node_id(endpoint_node_id)
             for ostium_node_id in ostia_node_id:
                 # continue if the returned ostium is None
                 if ostia_node_id is None:

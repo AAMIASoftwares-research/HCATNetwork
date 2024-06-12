@@ -572,7 +572,7 @@ class SimpleCenterlineGraph(networkx.classes.graph.Graph):
         node_position = numpy.array([node["x"], node["y"], node["z"]])
         node_neighbors = list(self.neighbors(node_id))
         if nodes_distances_from_ostium is None:
-            ostium = self.get_relative_coronary_ostia_node_id(node_id)[0]
+            ostium = self._get_relative_coronary_ostia_node_id(node_id)[0]
             node_distance_from_ostium = networkx.algorithms.shortest_path_length(self, ostium, node_id, weight="euclidean_distance")
             node_neighbors_distance_from_ostium = numpy.array([
                 networkx.algorithms.shortest_path_length(self, ostium, n, weight="euclidean_distance")
@@ -889,27 +889,6 @@ TYPE_NAME_TO_TYPE_DICT["HeartDominance"] = HeartDominance
 
 
 
-
-
-
-
-
-
-# TEST: get_flow_direction and get_nodes_distance_from_ostia
-
-if __name__ == "__main__":
-    import time
-    import matplotlib.pyplot as plt
-    from ..io.io import load_graph
-    graph_path = "E:/MatteoLeccardi/HearticData/CAT08/centerlines_graphs/dataset00.GML"
-    graph = load_graph(graph_path, output_type=networkx.classes.graph.Graph)
-    graph.graph["are_left_right_disjointed"] = bool(int(graph.graph["are_left_right_disjointed"]))
-    graph = SimpleCenterlineGraph.from_networkx_graph(graph)
-    # Test get_nodes_distance_from_ostia
-    from ..draw.draw import draw_simple_centerlines_graph_2d
-    draw_simple_centerlines_graph_2d(graph)
-    #
-    quit()
 
 
 
