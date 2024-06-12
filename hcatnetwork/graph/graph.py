@@ -530,29 +530,58 @@ class SimpleCenterlineGraph(networkx.classes.graph.Graph):
                         edge_features.update_weight_from_euclidean_distance()
                         graph_new.add_edge(n0, n1, **edge_features)
         return graph_new
+    
+    def get_nodes_distance_from_ostia(self) -> dict[str, float]:
+        """Gets the distance of each node from the closest ostium.
 
-    def get_flow_direction(self, node_id: str) -> numpy.ndarray:
+        Returns
+        -------
+        dict[str, float]
+            A dictionary where the key is the node id and the value is the distance from the closest ostium.
+        
+        """
+        ostia = self.get_coronary_ostia_node_id()
+        distances: dict = networkx.single_source_dijkstra_path_length(self, ostia[0], weight="euclidean_distance")
+        distances_to_merge: dict = networkx.single_source_dijkstra_path_length(self, ostia[1], weight="euclidean_distance")
+        # inside distances_to_merge, if there is a node of the same id as in distances, the distance is updated to the minimum
+        for node_id in distances_to_merge:
+            if node_id in distances:
+                distances_to_merge[node_id] = min(distances[node_id], distances_to_merge[node_id])
+        # merge the two dictionaries directly (fastest way)
+        # this will add the missing nodes from the second dictionary
+        # and update the distances of the nodes that are in both dictionaries
+        distances.update(distances_to_merge)
+        return distances
+
+    def get_flow_direction(self, node_id: str, nodes_distances_from_ostium: dict[str, float]|None = None) -> numpy.ndarray:
         """Gets the direction towards the next node, where the next node is the distal connected node.
         If an endpoint, the direction from the previous node to the endpoint is returned.
         If a bifurcation, the direction towards the next node is the average of the directions towards the next nodes.
+        
+        If the parameter distance_from_ostium is provided, the function will be much faster (about 700 times).
+        nodes_distances_from_ostium can be the output of the method self.get_nodes_distance_from_ostia().
         """
         node = self.nodes[node_id]
-        ostium = self.get_relative_coronary_ostia_node_id(node_id)[0]
-        node_distance_from_ostium = networkx.algorithms.shortest_path_length(self, ostium, node_id, weight="euclidean_distance")
-        node_neighbors = list(self.neighbors(node_id))
-        node_neighbors_distance_from_ostium = numpy.array([
-            networkx.algorithms.shortest_path_length(self, ostium, n, weight="euclidean_distance")
-            for n in node_neighbors
-        ])
-        node_neighbours_flow = node_neighbors_distance_from_ostium - node_distance_from_ostium
         node_position = numpy.array([node["x"], node["y"], node["z"]])
+        node_neighbors = list(self.neighbors(node_id))
+        if nodes_distances_from_ostium is None:
+            ostium = self.get_relative_coronary_ostia_node_id(node_id)[0]
+            node_distance_from_ostium = networkx.algorithms.shortest_path_length(self, ostium, node_id, weight="euclidean_distance")
+            node_neighbors_distance_from_ostium = numpy.array([
+                networkx.algorithms.shortest_path_length(self, ostium, n, weight="euclidean_distance")
+                for n in node_neighbors
+            ])
+        else:
+            node_distance_from_ostium = nodes_distances_from_ostium[node_id]
+            node_neighbors_distance_from_ostium = numpy.array([nodes_distances_from_ostium[n] for n in node_neighbors])
+        node_neighbours_flow = node_neighbors_distance_from_ostium - node_distance_from_ostium
         node_neighbors_positions = [
             numpy.array([self.nodes[n]["x"], self.nodes[n]["y"], self.nodes[n]["z"]])
             for n in node_neighbors
         ]
-        # every node except endpoints - bifurcations are automatically handled
+        # every node except endpoints - outgoing bifurcations are automatically handled
         if (node_neighbours_flow > 0).any():
-            # net the next neighbour(s)
+            # get the next neighbour(s)
             next_neighbours = [i for i in range(len(node_neighbors)) if node_neighbours_flow[i] > 0]
             # get the direction towards the next node
             direction = numpy.array([0.0, 0.0, 0.0])
@@ -560,7 +589,7 @@ class SimpleCenterlineGraph(networkx.classes.graph.Graph):
                 d = node_neighbors_positions[next_n_idx] - node_position
                 direction += d / numpy.linalg.norm(d)
             direction /= len(next_neighbours)
-        # endpoints - bifurcations are automatically handled
+        # endpoints - incoming bifurcations are automatically handled (there should not be any)
         elif (node_neighbours_flow < 0).any():
             # get the direction from the previous node(s) to the endpoint
             previous_neighbours = [i for i in range(len(node_neighbors)) if node_neighbours_flow[i] < 0]
@@ -850,11 +879,6 @@ class HeartDominance(Enum):
 TYPE_NAME_TO_TYPE_DICT["SimpleCenterlineGraph"] = SimpleCenterlineGraph
 TYPE_NAME_TO_TYPE_DICT["SimpleCenterlineGraphAttributes"] = SimpleCenterlineGraphAttributes
 TYPE_NAME_TO_TYPE_DICT["HeartDominance"] = HeartDominance
-
-
-
-
-
 
 
 
