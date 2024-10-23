@@ -427,6 +427,20 @@ class SimpleCenterlineGraph(networkx.classes.graph.Graph):
             subgraph.add_edge(segment[0], segment[1], **edge_features)
         # Done
         return subgraph
+    
+    def subgraph(self, nodes):
+        # this is a override of networkx.classes.graph.Graph.subgraph()
+        # that does not work with the SimpleCenterlineGraph because it needs
+        # to be constructed with the SimpleCenterlineGraphAttributes
+        new_graph = SimpleCenterlineGraph(self.graph)
+        nodes = list(nodes)
+        for node in nodes:
+            new_graph.add_node(node, **self.nodes[node])
+        for edge in self.edges:
+            if edge[0] in nodes and edge[1] in nodes:
+                new_graph.add_edge(edge[0], edge[1], **self.edges[edge])
+        return new_graph
+
         
     def resample(self, mm_between_nodes: float = 0.5, update_image_id=True) -> SimpleCenterlineGraph:
         """Resamples the coronary artery tree so that two connected points are on average mm_between_nodes millimeters apart.
